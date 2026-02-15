@@ -22,7 +22,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$MODE" == "release" ]]; then
-  cargo run --release "${RUN_ARGS[@]}"
+  if [[ ${#RUN_ARGS[@]} -gt 0 ]]; then
+    cargo run --release "${RUN_ARGS[@]}"
+  else
+    cargo run --release
+  fi
 else
-  cargo run "${RUN_ARGS[@]}"
+  if [[ ${#RUN_ARGS[@]} -gt 0 ]]; then
+    cargo run "${RUN_ARGS[@]}"
+  else
+    cargo run
+  fi
 fi
