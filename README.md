@@ -33,13 +33,20 @@ Requires SDL3 development libraries installed on your system.
 Capture the last rendered frame before exit:
 
 ```bash
-cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot /tmp/echolab_last_frame.ppm
+cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot
 ```
 
-Or use the default screenshot path (`./screenshots/echolab_last_frame.ppm`):
+Screenshots are always named `screenshot_<timestamp>.ppm`.
+Default output directory comes from `echolab.toml`:
 
 ```bash
-cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot
+default_screenshot_dir = "screenshots"
+```
+
+Override output directory per run:
+
+```bash
+cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot /tmp/echolab_shots
 ```
 
 Configuration lives in:
@@ -81,6 +88,7 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `echolab.toml`: default app config values (screenshot path, auto-exit)
+- `echolab.toml`: default app config values (screenshot directory, auto-exit)
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan

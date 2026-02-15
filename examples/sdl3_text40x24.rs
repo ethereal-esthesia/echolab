@@ -11,9 +11,9 @@ mod app {
     use echo_lab::video::{FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::ptr;
-    use std::time::{Duration, Instant};
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
     #[repr(C)]
     struct SDL_Window(c_void);
@@ -92,9 +92,18 @@ mod app {
         }
     }
 
+    fn timestamped_screenshot_path(dir: &str) -> Result<PathBuf, String> {
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| format!("system time error: {}", e))?
+            .as_secs();
+        let file_name = format!("screenshot_{}.ppm", ts);
+        Ok(Path::new(dir).join(file_name))
+    }
+
     pub fn run() -> Result<(), String> {
         let mut screenshot_requested = false;
-        let mut screenshot_path_override: Option<String> = None;
+        let mut screenshot_dir_override: Option<String> = None;
         let mut config_path = String::from("echolab.toml");
         let mut config_path_explicit = false;
 
@@ -105,7 +114,7 @@ mod app {
                 "--screenshot" => {
                     screenshot_requested = true;
                     if i + 1 < args.len() && !args[i + 1].starts_with('-') {
-                        screenshot_path_override = Some(args[i + 1].clone());
+                        screenshot_dir_override = Some(args[i + 1].clone());
                         i += 2;
                     } else {
                         i += 1;
@@ -121,11 +130,12 @@ mod app {
                 }
                 "-h" | "--help" => {
                     println!(
-                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--screenshot [path]]"
+                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--screenshot [dir]]"
                     );
                     println!("Config default path: ./echolab.toml");
+                    println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                     println!(
-                        "If --screenshot path is omitted, uses sdl3_text40x24.default_screenshot_path from config."
+                        "If --screenshot dir is omitted, uses sdl3_text40x24.default_screenshot_dir from config."
                     );
                     return Ok(());
                 }
@@ -135,10 +145,9 @@ mod app {
 
         let cfg = EchoLabConfig::load_from_path(&config_path, config_path_explicit)?;
         let screenshot_path = if screenshot_requested {
-            Some(
-                screenshot_path_override
-                    .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_path.clone()),
-            )
+            let dir = screenshot_dir_override
+                .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_dir.clone());
+            Some(timestamped_screenshot_path(&dir)?)
         } else {
             None
         };
@@ -230,7 +239,7 @@ mod app {
             }
 
             if let Some(path) = screenshot_path.as_deref() {
-                if let Some(parent) = PathBuf::from(path).parent()
+                if let Some(parent) = path.parent()
                     && !parent.as_os_str().is_empty()
                 {
                     fs::create_dir_all(parent).map_err(|e| {
@@ -241,10 +250,10 @@ mod app {
                         )
                     })?;
                 }
-                frame
-                    .save_as_ppm(path)
-                    .map_err(|e| format!("failed to save screenshot '{}': {}", path, e))?;
-                println!("Saved screenshot to {}", path);
+                frame.save_as_ppm(path).map_err(|e| {
+                    format!("failed to save screenshot '{}': {}", path.display(), e)
+                })?;
+                println!("Saved screenshot to {}", path.display());
             }
 
             SDL_DestroyTexture(texture);

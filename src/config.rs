@@ -4,14 +4,14 @@ use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sdl3Text40x24Config {
-    pub default_screenshot_path: String,
+    pub default_screenshot_dir: String,
     pub auto_exit_seconds: u64,
 }
 
 impl Default for Sdl3Text40x24Config {
     fn default() -> Self {
         Self {
-            default_screenshot_path: "screenshots/echolab_last_frame.ppm".to_owned(),
+            default_screenshot_dir: "screenshots".to_owned(),
             auto_exit_seconds: 5,
         }
     }
@@ -65,8 +65,8 @@ impl EchoLabConfig {
 
             if section == "sdl3_text40x24" {
                 match key {
-                    "default_screenshot_path" => {
-                        cfg.sdl3_text40x24.default_screenshot_path = value;
+                    "default_screenshot_dir" => {
+                        cfg.sdl3_text40x24.default_screenshot_dir = value;
                     }
                     "auto_exit_seconds" => {
                         cfg.sdl3_text40x24.auto_exit_seconds =
