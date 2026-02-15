@@ -11,6 +11,8 @@ mod app {
     use echo_lab::screen_buffer::ScreenBuffer;
     use echo_lab::video::{FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
+    use std::fs;
+    use std::path::PathBuf;
     use std::ptr;
     use std::time::{Duration, Instant};
 
@@ -78,7 +80,8 @@ mod app {
     const SDL_TEXTUREACCESS_STREAMING: c_int = 1;
     const SDL_PIXELFORMAT_ARGB8888: u32 = 372_645_892;
     const SDL_EVENT_QUIT: u32 = 0x100;
-    const DEFAULT_SCREENSHOT_PATH: &str = "/tmp/echolab_last_frame.ppm";
+    const DEFAULT_SCREENSHOT_DIR: &str = "screenshots";
+    const DEFAULT_SCREENSHOT_NAME: &str = "echolab_last_frame.ppm";
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -107,7 +110,9 @@ mod app {
                         }
                         screenshot_path = Some(next);
                     } else {
-                        screenshot_path = Some(DEFAULT_SCREENSHOT_PATH.to_owned());
+                        let mut default_path = PathBuf::from(DEFAULT_SCREENSHOT_DIR);
+                        default_path.push(DEFAULT_SCREENSHOT_NAME);
+                        screenshot_path = Some(default_path.to_string_lossy().into_owned());
                     }
                 }
                 "-h" | "--help" => {
@@ -115,8 +120,7 @@ mod app {
                         "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--screenshot [path]]"
                     );
                     println!(
-                        "If path is omitted, default is {}.",
-                        DEFAULT_SCREENSHOT_PATH
+                        "If path is omitted, default is ./screenshots/echolab_last_frame.ppm."
                     );
                     return Ok(());
                 }
@@ -213,6 +217,17 @@ mod app {
             }
 
             if let Some(path) = screenshot_path.as_deref() {
+                if let Some(parent) = PathBuf::from(path).parent()
+                    && !parent.as_os_str().is_empty()
+                {
+                    fs::create_dir_all(parent).map_err(|e| {
+                        format!(
+                            "failed to create screenshot directory '{}': {}",
+                            parent.display(),
+                            e
+                        )
+                    })?;
+                }
                 frame
                     .save_as_ppm(path)
                     .map_err(|e| format!("failed to save screenshot '{}': {}", path, e))?;

@@ -36,7 +36,7 @@ Capture the last rendered frame before exit:
 cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot /tmp/echolab_last_frame.ppm
 ```
 
-Or use the default screenshot path (`/tmp/echolab_last_frame.ppm`):
+Or use the default screenshot path (`./screenshots/echolab_last_frame.ppm`):
 
 ```bash
 cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot
