@@ -16,6 +16,12 @@ Echo Lab is a Rust workspace for emulator experiments.
 cargo run
 ```
 
+## Demo: Text Hello
+
+```bash
+cargo run --example hello_text
+```
+
 ## Scripts
 
 - `./install.sh [--force]`: install toolchain and platform dependencies.
@@ -39,6 +45,7 @@ cargo run
 - `tests/rng_determinism.rs`: integration tests for RNG behavior
 - `tests/screen_buffer.rs`: integration tests for display buffer behavior
 - `tests/text_video.rs`: integration tests for text scanout behavior
+- `examples/hello_text.rs`: simple text-page hello-world render demo
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan
