@@ -1,8 +1,5 @@
-mod lab;
-mod machines;
-
-use lab::Lab;
-use machines::iie;
+use echo_lab::lab::Lab;
+use echo_lab::machines::iie;
 
 fn main() {
     let lab = Lab::new("Echo Lab").with_machine(iie::apple_iie());
