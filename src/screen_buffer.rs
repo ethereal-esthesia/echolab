@@ -1,6 +1,7 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
 pub struct ScreenBuffer {
@@ -84,6 +85,19 @@ impl ScreenBuffer {
         }
 
         Ok(())
+    }
+
+    pub fn save_timestamped_ppm_in_dir<P: AsRef<Path>>(&self, dir: P) -> io::Result<PathBuf> {
+        let dir = dir.as_ref();
+        fs::create_dir_all(dir)?;
+
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let path = dir.join(format!("screenshot_{}.ppm", ts));
+        self.save_as_ppm(&path)?;
+        Ok(path)
     }
 
     fn index_of(&self, x: usize, y: usize) -> Option<usize> {

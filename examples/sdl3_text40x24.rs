@@ -10,10 +10,8 @@ mod app {
     use echo_lab::screen_buffer::ScreenBuffer;
     use echo_lab::video::{FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
-    use std::fs;
-    use std::path::{Path, PathBuf};
     use std::ptr;
-    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+    use std::time::{Duration, Instant};
 
     #[repr(C)]
     struct SDL_Window(c_void);
@@ -92,15 +90,6 @@ mod app {
         }
     }
 
-    fn timestamped_screenshot_path(dir: &str) -> Result<PathBuf, String> {
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| format!("system time error: {}", e))?
-            .as_secs();
-        let file_name = format!("screenshot_{}.ppm", ts);
-        Ok(Path::new(dir).join(file_name))
-    }
-
     pub fn run() -> Result<(), String> {
         let mut screenshot_requested = false;
         let mut screenshot_dir_override: Option<String> = None;
@@ -144,10 +133,10 @@ mod app {
         }
 
         let cfg = EchoLabConfig::load_from_path(&config_path, config_path_explicit)?;
-        let screenshot_path = if screenshot_requested {
+        let screenshot_dir = if screenshot_requested {
             let dir = screenshot_dir_override
                 .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_dir.clone());
-            Some(timestamped_screenshot_path(&dir)?)
+            Some(dir)
         } else {
             None
         };
@@ -238,21 +227,10 @@ mod app {
                 SDL_Delay(16);
             }
 
-            if let Some(path) = screenshot_path.as_deref() {
-                if let Some(parent) = path.parent()
-                    && !parent.as_os_str().is_empty()
-                {
-                    fs::create_dir_all(parent).map_err(|e| {
-                        format!(
-                            "failed to create screenshot directory '{}': {}",
-                            parent.display(),
-                            e
-                        )
-                    })?;
-                }
-                frame.save_as_ppm(path).map_err(|e| {
-                    format!("failed to save screenshot '{}': {}", path.display(), e)
-                })?;
+            if let Some(dir) = screenshot_dir.as_deref() {
+                let path = frame
+                    .save_timestamped_ppm_in_dir(dir)
+                    .map_err(|e| format!("failed to save screenshot in '{}': {}", dir, e))?;
                 println!("Saved screenshot to {}", path.display());
             }
 

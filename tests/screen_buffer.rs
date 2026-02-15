@@ -66,3 +66,33 @@ fn save_as_ppm_writes_valid_header_and_pixels() {
     assert!(bytes.starts_with(header));
     assert_eq!(&bytes[header.len()..], &[255, 0, 0, 0, 255, 0]);
 }
+
+#[test]
+fn save_timestamped_ppm_in_dir_creates_timestamped_file() {
+    let mut buffer = ScreenBuffer::new(1, 1);
+    assert!(buffer.set_pixel(0, 0, 0xffff_ffff));
+
+    let mut dir = std::env::temp_dir();
+    dir.push(format!(
+        "echolab_screenbuffer_dir_{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("time should be after epoch")
+            .as_nanos()
+    ));
+
+    let path = buffer
+        .save_timestamped_ppm_in_dir(&dir)
+        .expect("timestamped ppm should be written");
+    let filename = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .expect("filename should be utf-8");
+    assert!(filename.starts_with("screenshot_"));
+    assert!(filename.ends_with(".ppm"));
+    assert!(path.exists());
+
+    let _ = fs::remove_file(path);
+    let _ = fs::remove_dir_all(dir);
+}
