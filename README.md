@@ -7,6 +7,7 @@ Echo Lab is a Rust workspace for emulator experiments.
 - Minimal lab model and machine registry
 - One machine descriptor: Apple IIe
 - Deterministic fast RNG module for emulator workloads
+- Testable screen buffer with explicit frame publish counter
 
 ## Run
 
@@ -32,7 +33,9 @@ cargo run
 - `src/lab.rs`: `Lab` model and machine list
 - `src/machines/`: machine descriptors
 - `src/rng.rs`: deterministic `FastRng` from benchmark logic
+- `src/screen_buffer.rs`: emulator display buffer (`u32` pixels + `frame_id`)
 - `tests/rng_determinism.rs`: integration tests for RNG behavior
+- `tests/screen_buffer.rs`: integration tests for display buffer behavior
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan
