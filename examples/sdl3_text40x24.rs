@@ -1,7 +1,9 @@
 #[cfg(not(feature = "sdl3"))]
 fn main() {
     eprintln!("This example requires the 'sdl3' feature.");
-    eprintln!("Run: cargo run --example sdl3_text40x24 --features sdl3");
+    eprintln!(
+        "Run: cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot /tmp/frame.ppm"
+    );
 }
 
 #[cfg(feature = "sdl3")]
@@ -90,6 +92,28 @@ mod app {
     }
 
     pub fn run() -> Result<(), String> {
+        let mut screenshot_path: Option<String> = None;
+        let mut args = std::env::args().skip(1);
+        while let Some(arg) = args.next() {
+            match arg.as_str() {
+                "--screenshot" => {
+                    let Some(path) = args.next() else {
+                        return Err("missing value for --screenshot".to_owned());
+                    };
+                    screenshot_path = Some(path);
+                }
+                "-h" | "--help" => {
+                    println!(
+                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--screenshot <path>]"
+                    );
+                    return Ok(());
+                }
+                other => {
+                    return Err(format!("unknown argument: {other}"));
+                }
+            }
+        }
+
         let title = CString::new("Echo Lab SDL3 Text 40x24").map_err(|e| e.to_string())?;
 
         // SAFETY: SDL lifecycle calls are serialized in this function.
@@ -174,6 +198,13 @@ mod app {
                     break 'running;
                 }
                 SDL_Delay(16);
+            }
+
+            if let Some(path) = screenshot_path.as_deref() {
+                frame
+                    .save_as_ppm(path)
+                    .map_err(|e| format!("failed to save screenshot '{}': {}", path, e))?;
+                println!("Saved screenshot to {}", path);
             }
 
             SDL_DestroyTexture(texture);

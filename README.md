@@ -30,6 +30,12 @@ cargo run --example sdl3_text40x24 --features sdl3
 
 Requires SDL3 development libraries installed on your system.
 
+Capture the last rendered frame before exit:
+
+```bash
+cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot /tmp/echolab_last_frame.ppm
+```
+
 ## Scripts
 
 - `./install.sh [--force]`: install toolchain and platform dependencies.
@@ -49,6 +55,7 @@ Requires SDL3 development libraries installed on your system.
 - `src/machines/`: machine descriptors
 - `src/rng.rs`: deterministic `FastRng` from benchmark logic
 - `src/screen_buffer.rs`: emulator display buffer (`u32` pixels + `frame_id`)
+- `src/screen_buffer.rs`: emulator display buffer (`u32` pixels + `frame_id`) + PPM screenshot export
 - `src/video/mod.rs`: text-only video controller that renders RAM into `ScreenBuffer`
 - `tests/rng_determinism.rs`: integration tests for RNG behavior
 - `tests/screen_buffer.rs`: integration tests for display buffer behavior

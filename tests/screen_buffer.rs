@@ -1,4 +1,6 @@
 use echo_lab::screen_buffer::ScreenBuffer;
+use std::fs;
+use std::path::PathBuf;
 
 #[test]
 fn screen_buffer_has_expected_dimensions_and_size() {
@@ -36,4 +38,31 @@ fn publish_frame_monotonically_increments_frame_id() {
     assert_eq!(buffer.publish_frame(), 1);
     assert_eq!(buffer.publish_frame(), 2);
     assert_eq!(buffer.frame_id(), 2);
+}
+
+#[test]
+fn save_as_ppm_writes_valid_header_and_pixels() {
+    let mut buffer = ScreenBuffer::new(2, 1);
+    assert!(buffer.set_pixel(0, 0, 0xffff_0000));
+    assert!(buffer.set_pixel(1, 0, 0xff00_ff00));
+
+    let mut path: PathBuf = std::env::temp_dir();
+    path.push(format!(
+        "echolab_screenbuffer_{}_{}.ppm",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("time should be after epoch")
+            .as_nanos()
+    ));
+
+    buffer
+        .save_as_ppm(&path)
+        .expect("ppm should be written successfully");
+    let bytes = fs::read(&path).expect("ppm should be readable");
+    let _ = fs::remove_file(&path);
+
+    let header = b"P6\n2 1\n255\n";
+    assert!(bytes.starts_with(header));
+    assert_eq!(&bytes[header.len()..], &[255, 0, 0, 0, 255, 0]);
 }
