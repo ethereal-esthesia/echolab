@@ -78,6 +78,7 @@ mod app {
     const SDL_TEXTUREACCESS_STREAMING: c_int = 1;
     const SDL_PIXELFORMAT_ARGB8888: u32 = 372_645_892;
     const SDL_EVENT_QUIT: u32 = 0x100;
+    const DEFAULT_SCREENSHOT_PATH: &str = "/tmp/echolab_last_frame.ppm";
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -97,14 +98,25 @@ mod app {
         while let Some(arg) = args.next() {
             match arg.as_str() {
                 "--screenshot" => {
-                    let Some(path) = args.next() else {
-                        return Err("missing value for --screenshot".to_owned());
-                    };
-                    screenshot_path = Some(path);
+                    if let Some(next) = args.next() {
+                        if next.starts_with('-') {
+                            return Err(format!(
+                                "invalid screenshot path '{}'; pass a file path after --screenshot",
+                                next
+                            ));
+                        }
+                        screenshot_path = Some(next);
+                    } else {
+                        screenshot_path = Some(DEFAULT_SCREENSHOT_PATH.to_owned());
+                    }
                 }
                 "-h" | "--help" => {
                     println!(
-                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--screenshot <path>]"
+                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--screenshot [path]]"
+                    );
+                    println!(
+                        "If path is omitted, default is {}.",
+                        DEFAULT_SCREENSHOT_PATH
                     );
                     return Ok(());
                 }
