@@ -1,0 +1,18 @@
+# Rust build outputs
+target/
+
+# Optional local build/artifact folders
+build/
+dist/
+out/
+
+# Logs
+*.log
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Legacy reference imports
+archive/
