@@ -22,6 +22,14 @@ cargo run
 cargo run --example hello_text
 ```
 
+## Demo: SDL3 Text 40x24
+
+```bash
+cargo run --example sdl3_text40x24 --features sdl3
+```
+
+Requires SDL3 development libraries installed on your system.
+
 ## Scripts
 
 - `./install.sh [--force]`: install toolchain and platform dependencies.
@@ -46,6 +54,7 @@ cargo run --example hello_text
 - `tests/screen_buffer.rs`: integration tests for display buffer behavior
 - `tests/text_video.rs`: integration tests for text scanout behavior
 - `examples/hello_text.rs`: simple text-page hello-world render demo
+- `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan
