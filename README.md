@@ -42,6 +42,18 @@ Or use the default screenshot path (`./screenshots/echolab_last_frame.ppm`):
 cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot
 ```
 
+Configuration lives in:
+
+```bash
+./echolab.toml
+```
+
+You can override config path:
+
+```bash
+cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.toml --screenshot
+```
+
 ## Scripts
 
 - `./install.sh [--force]`: install toolchain and platform dependencies.
@@ -56,6 +68,7 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot
 ## Project Layout
 
 - `src/lib.rs`: library modules exported for app + tests
+- `src/config.rs`: typed config loader for `echolab.toml`
 - `src/main.rs`: CLI entry and output
 - `src/lab.rs`: `Lab` model and machine list
 - `src/machines/`: machine descriptors
@@ -67,6 +80,7 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot
 - `tests/text_video.rs`: integration tests for text scanout behavior
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
+- `echolab.toml`: default app config values (screenshot path, auto-exit)
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan

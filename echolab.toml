@@ -1,0 +1,3 @@
+[sdl3_text40x24]
+default_screenshot_path = "screenshots/echolab_last_frame.ppm"
+auto_exit_seconds = 5

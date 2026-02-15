@@ -1,13 +1,12 @@
 #[cfg(not(feature = "sdl3"))]
 fn main() {
     eprintln!("This example requires the 'sdl3' feature.");
-    eprintln!(
-        "Run: cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot /tmp/frame.ppm"
-    );
+    eprintln!("Run: cargo run --example sdl3_text40x24 --features sdl3 -- --screenshot");
 }
 
 #[cfg(feature = "sdl3")]
 mod app {
+    use echo_lab::config::EchoLabConfig;
     use echo_lab::screen_buffer::ScreenBuffer;
     use echo_lab::video::{FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
@@ -80,8 +79,6 @@ mod app {
     const SDL_TEXTUREACCESS_STREAMING: c_int = 1;
     const SDL_PIXELFORMAT_ARGB8888: u32 = 372_645_892;
     const SDL_EVENT_QUIT: u32 = 0x100;
-    const DEFAULT_SCREENSHOT_DIR: &str = "screenshots";
-    const DEFAULT_SCREENSHOT_NAME: &str = "echolab_last_frame.ppm";
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -96,39 +93,55 @@ mod app {
     }
 
     pub fn run() -> Result<(), String> {
-        let mut screenshot_path: Option<String> = None;
-        let mut args = std::env::args().skip(1);
-        while let Some(arg) = args.next() {
-            match arg.as_str() {
+        let mut screenshot_requested = false;
+        let mut screenshot_path_override: Option<String> = None;
+        let mut config_path = String::from("echolab.toml");
+        let mut config_path_explicit = false;
+
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        let mut i = 0usize;
+        while i < args.len() {
+            match args[i].as_str() {
                 "--screenshot" => {
-                    if let Some(next) = args.next() {
-                        if next.starts_with('-') {
-                            return Err(format!(
-                                "invalid screenshot path '{}'; pass a file path after --screenshot",
-                                next
-                            ));
-                        }
-                        screenshot_path = Some(next);
+                    screenshot_requested = true;
+                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                        screenshot_path_override = Some(args[i + 1].clone());
+                        i += 2;
                     } else {
-                        let mut default_path = PathBuf::from(DEFAULT_SCREENSHOT_DIR);
-                        default_path.push(DEFAULT_SCREENSHOT_NAME);
-                        screenshot_path = Some(default_path.to_string_lossy().into_owned());
+                        i += 1;
                     }
+                }
+                "--config" => {
+                    if i + 1 >= args.len() {
+                        return Err("missing value for --config".to_owned());
+                    }
+                    config_path = args[i + 1].clone();
+                    config_path_explicit = true;
+                    i += 2;
                 }
                 "-h" | "--help" => {
                     println!(
-                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--screenshot [path]]"
+                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--screenshot [path]]"
                     );
+                    println!("Config default path: ./echolab.toml");
                     println!(
-                        "If path is omitted, default is ./screenshots/echolab_last_frame.ppm."
+                        "If --screenshot path is omitted, uses sdl3_text40x24.default_screenshot_path from config."
                     );
                     return Ok(());
                 }
-                other => {
-                    return Err(format!("unknown argument: {other}"));
-                }
+                other => return Err(format!("unknown argument: {other}")),
             }
         }
+
+        let cfg = EchoLabConfig::load_from_path(&config_path, config_path_explicit)?;
+        let screenshot_path = if screenshot_requested {
+            Some(
+                screenshot_path_override
+                    .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_path.clone()),
+            )
+        } else {
+            None
+        };
 
         let title = CString::new("Echo Lab SDL3 Text 40x24").map_err(|e| e.to_string())?;
 
@@ -172,8 +185,8 @@ mod app {
 
             let mut ram = [b' '; 65536];
             let msg = b"HELLO WORLD FROM SDL3";
-            for (i, b) in msg.iter().enumerate() {
-                ram[0x0400 + i] = *b;
+            for (idx, b) in msg.iter().enumerate() {
+                ram[0x0400 + idx] = *b;
             }
 
             let video = TextVideoController::default();
@@ -210,7 +223,7 @@ mod app {
                     break 'running;
                 }
                 SDL_RenderPresent(renderer);
-                if start.elapsed() >= Duration::from_secs(5) {
+                if start.elapsed() >= Duration::from_secs(cfg.sdl3_text40x24.auto_exit_seconds) {
                     break 'running;
                 }
                 SDL_Delay(16);
