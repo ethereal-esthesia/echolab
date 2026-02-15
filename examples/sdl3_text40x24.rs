@@ -90,56 +90,83 @@ mod app {
         }
     }
 
-    pub fn run() -> Result<(), String> {
-        let mut screenshot_requested = false;
-        let mut screenshot_dir_override: Option<String> = None;
-        let mut config_path = String::from("echolab.toml");
-        let mut config_path_explicit = false;
+    struct CliOptions {
+        config_path: String,
+        config_path_explicit: bool,
+        screenshot_dir_override: Option<String>,
+        screenshot_requested: bool,
+    }
 
-        let args: Vec<String> = std::env::args().skip(1).collect();
-        let mut i = 0usize;
-        while i < args.len() {
-            match args[i].as_str() {
-                "--screenshot" => {
-                    screenshot_requested = true;
-                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
-                        screenshot_dir_override = Some(args[i + 1].clone());
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "--config" => {
-                    if i + 1 >= args.len() {
-                        return Err("missing value for --config".to_owned());
-                    }
-                    config_path = args[i + 1].clone();
-                    config_path_explicit = true;
-                    i += 2;
-                }
-                "-h" | "--help" => {
-                    println!(
-                        "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--screenshot [dir]]"
-                    );
-                    println!("Config default path: ./echolab.toml");
-                    println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
-                    println!(
-                        "If --screenshot dir is omitted, uses sdl3_text40x24.default_screenshot_dir from config."
-                    );
-                    return Ok(());
-                }
-                other => return Err(format!("unknown argument: {other}")),
+    impl Default for CliOptions {
+        fn default() -> Self {
+            Self {
+                config_path: "echolab.toml".to_owned(),
+                config_path_explicit: false,
+                screenshot_dir_override: None,
+                screenshot_requested: false,
             }
         }
+    }
 
-        let cfg = EchoLabConfig::load_from_path(&config_path, config_path_explicit)?;
-        let screenshot_dir = if screenshot_requested {
-            let dir = screenshot_dir_override
-                .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_dir.clone());
-            Some(dir)
-        } else {
-            None
-        };
+    impl CliOptions {
+        fn parse() -> Result<Self, String> {
+            let mut options = Self::default();
+            let args: Vec<String> = std::env::args().skip(1).collect();
+            let mut i = 0usize;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--screenshot" => {
+                        options.screenshot_requested = true;
+                        if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                            options.screenshot_dir_override = Some(args[i + 1].clone());
+                            i += 2;
+                        } else {
+                            i += 1;
+                        }
+                    }
+                    "--config" => {
+                        if i + 1 >= args.len() {
+                            return Err("missing value for --config".to_owned());
+                        }
+                        options.config_path = args[i + 1].clone();
+                        options.config_path_explicit = true;
+                        i += 2;
+                    }
+                    "-h" | "--help" => {
+                        println!(
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--screenshot [dir]]"
+                        );
+                        println!("Config default path: ./echolab.toml");
+                        println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
+                        println!(
+                            "If --screenshot dir is omitted, uses sdl3_text40x24.default_screenshot_dir from config."
+                        );
+                        std::process::exit(0);
+                    }
+                    other => return Err(format!("unknown argument: {other}")),
+                }
+            }
+            Ok(options)
+        }
+
+        fn screenshot_dir(&self, cfg: &EchoLabConfig) -> Option<String> {
+            if !self.screenshot_requested {
+                return None;
+            }
+
+            Some(
+                self.screenshot_dir_override
+                    .clone()
+                    .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_dir.clone()),
+            )
+        }
+    }
+
+    pub fn run() -> Result<(), String> {
+        let options = CliOptions::parse()?;
+        let cfg =
+            EchoLabConfig::load_from_path(&options.config_path, options.config_path_explicit)?;
+        let screenshot_dir = options.screenshot_dir(&cfg);
 
         let title = CString::new("Echo Lab SDL3 Text 40x24").map_err(|e| e.to_string())?;
 
