@@ -188,7 +188,7 @@ mod app {
             }
 
             let mut ram = [b' '; 65536];
-            fill_text_page_ascii_sequence(&mut ram, 0x0400);
+            fill_text_page_demo_layout(&mut ram, 0x0400);
 
             let video = TextVideoController::default();
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
@@ -246,10 +246,29 @@ mod app {
         Ok(())
     }
 
-    fn fill_text_page_ascii_sequence(ram: &mut [u8; 65536], text_base: usize) {
-        let text_cells = 40 * 24;
-        for i in 0..text_cells {
-            ram[text_base + i] = (i % 256) as u8;
+    fn fill_text_page_demo_layout(ram: &mut [u8; 65536], text_base: usize) {
+        const COLS: usize = 40;
+        const ROWS: usize = 24;
+        const SPACE_NORMAL: u8 = b' ' | 0x80;
+        const HELLO: &[u8] = b"HELLO WORLD";
+
+        for i in 0..(COLS * ROWS) {
+            ram[text_base + i] = SPACE_NORMAL;
+        }
+
+        for row in [0usize, 1usize] {
+            for (i, ch) in HELLO.iter().enumerate() {
+                ram[text_base + row * COLS + i] = *ch | 0x80;
+            }
+        }
+
+        for code in 0u16..=255u16 {
+            let idx = code as usize;
+            let row = 2 + idx / 32;
+            let col = idx % 32;
+            if row < ROWS {
+                ram[text_base + row * COLS + col] = code as u8;
+            }
         }
     }
 }
