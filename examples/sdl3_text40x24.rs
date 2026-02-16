@@ -13,6 +13,7 @@ mod app {
     use echo_lab::video::{COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
     use std::ptr;
+    use std::thread;
     use std::time::{Duration, Instant};
 
     #[repr(C)]
@@ -81,6 +82,7 @@ mod app {
     const SDL_TEXTUREACCESS_STREAMING: c_int = 1;
     const SDL_PIXELFORMAT_ARGB8888: u32 = 372_645_892;
     const SDL_EVENT_QUIT: u32 = 0x100;
+    const APPLE2E_NTSC_FPS: f64 = 59.92;
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -102,6 +104,7 @@ mod app {
         flip_test: bool,
         fullscreen: bool,
         vsync_off: bool,
+        apple2e_ntsc_sync: bool,
     }
 
     impl Default for CliOptions {
@@ -114,6 +117,7 @@ mod app {
                 flip_test: false,
                 fullscreen: false,
                 vsync_off: false,
+                apple2e_ntsc_sync: false,
             }
         }
     }
@@ -153,15 +157,20 @@ mod app {
                         options.vsync_off = true;
                         i += 1;
                     }
+                    "--apple2e-ntsc-sync" => {
+                        options.apple2e_ntsc_sync = true;
+                        i += 1;
+                    }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--apple2e-ntsc-sync] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
                         println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
                         println!("Pass --fullscreen to start in fullscreen mode.");
                         println!("VSync is enabled by default; pass --vsync-off to disable it.");
+                        println!("Pass --apple2e-ntsc-sync to pace to 59.92 Hz (disables renderer VSync).");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
@@ -208,7 +217,12 @@ mod app {
                 SDL_Quit();
                 return Err(format!("SDL_CreateRenderer failed: {}", sdl_error()));
             }
-            let vsync_value: c_int = if options.vsync_off { 0 } else { 1 };
+            let use_apple2e_ntsc_sync = options.apple2e_ntsc_sync;
+            let vsync_value: c_int = if options.vsync_off || use_apple2e_ntsc_sync {
+                0
+            } else {
+                1
+            };
             if !SDL_SetRenderVSync(renderer, vsync_value) {
                 SDL_DestroyRenderer(renderer);
                 SDL_DestroyWindow(window);
@@ -240,6 +254,8 @@ mod app {
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
             let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let start = Instant::now();
+            let frame_period = Duration::from_secs_f64(1.0 / APPLE2E_NTSC_FPS);
+            let mut next_frame_deadline = Instant::now();
 
             'running: loop {
                 let mut event = SDL_Event {
@@ -278,7 +294,9 @@ mod app {
                 if start.elapsed() >= Duration::from_secs(cfg.sdl3_text40x24.auto_exit_seconds) {
                     break 'running;
                 }
-                if options.vsync_off {
+                if use_apple2e_ntsc_sync {
+                    pace_to_next_frame(&mut next_frame_deadline, frame_period);
+                } else if options.vsync_off {
                     SDL_Delay(16);
                 }
             }
@@ -327,6 +345,21 @@ mod app {
         const ROWS: usize = 24;
         for i in 0..(COLS * ROWS) {
             ram[text_base + i] = rng.next_u8() & 0x0f;
+        }
+    }
+
+    fn pace_to_next_frame(next_frame_deadline: &mut Instant, frame_period: Duration) {
+        *next_frame_deadline += frame_period;
+        let now = Instant::now();
+        if now + Duration::from_millis(1) < *next_frame_deadline {
+            thread::sleep(*next_frame_deadline - now - Duration::from_millis(1));
+        }
+        while Instant::now() < *next_frame_deadline {
+            std::hint::spin_loop();
+        }
+        let now = Instant::now();
+        if now.duration_since(*next_frame_deadline) > frame_period.saturating_mul(2) {
+            *next_frame_deadline = now;
         }
     }
 }
