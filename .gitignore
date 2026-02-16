@@ -16,3 +16,8 @@ out/
 
 # Legacy reference imports
 archive/
+
+# ROM directories (case-insensitive)
+**/[Rr][Oo][Mm]/
+**/[Rr][Oo][Mm][Ss]/
+**/*[Rr][Oo][Mm]*/
