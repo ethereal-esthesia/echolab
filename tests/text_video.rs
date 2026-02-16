@@ -48,3 +48,18 @@ fn render_frame_publishes_new_frame() {
     video.render_frame(&ram, &mut out);
     assert_eq!(out.frame_id(), 1);
 }
+
+#[test]
+fn text_video_uses_correct_left_to_right_glyph_bit_order() {
+    let mut ram = [0u8; 65536];
+    ram[0x0400] = b'F';
+
+    let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
+    let video = TextVideoController::default();
+    video.render_frame(&ram, &mut out);
+
+    // 'F' row 1 in this ROM is 0b0000010 for the vertical stroke; with correct
+    // orientation this appears near the left edge (x=1), not mirrored to x=5.
+    assert_eq!(out.get_pixel(1, 2), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(5, 2), Some(COLOR_BLACK));
+}

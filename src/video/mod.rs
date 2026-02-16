@@ -67,7 +67,8 @@ impl TextVideoController {
             let py = y0 + y;
             for x in 0..CELL_WIDTH {
                 let px = x0 + x;
-                let glyph_on = ((row_bits >> (6 - x)) & 0x01) != 0;
+                // Apple IIe glyph rows in this ROM table are stored LSB-left for 7-bit pixels.
+                let glyph_on = ((row_bits >> x) & 0x01) != 0;
                 let color = if active_scanline && glyph_on {
                     COLOR_PHOSPHOR_GREEN
                 } else {
