@@ -164,3 +164,20 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 | `+0x09` | `VPT_Y_OFFSET_PX` | `0x00-0x07` |
 | `+0x0A` | `VBL_SYNC` | write: apply frame/viewport settings at blanking period; read: bit0=`in_vblank`, bit1=`write_pending` |
 | `+0x0B` | `SWITCH_80_COL` | write: bit0 turns 80-col mode on, bit1 turns it off; read: bit0=`1` when 80-col mode is on, `0` when off |
+
+### MMIO I/O Block Plan
+
+| Range | Block | Initial Purpose |
+|---|---|---|
+| `0xE000-0xE01F` | `VIDEO` | frame/viewport control, VBlank sync/status, 80-col switch |
+| `0xE020-0xE02F` | `INPUT` | keyboard data/status and basic input flags |
+| `0xE030-0xE03F` | `AUDIO` | simple tone/noise frequency, volume, gate/control |
+| `0xE040-0xE05F` | `TIMER_IRQ` | free-running timer, compare registers, IRQ enable/status/ack |
+| `0xE060-0xE07F` | `SERIAL_DEBUG` | TX/RX data/status and optional debug output port |
+| `0xE080-0xE09F` | `STORAGE` | virtual storage command/status/data stub for future expansion |
+
+Guidelines:
+- Keep read side effects and write side effects explicit per register.
+- Separate status registers (read-heavy) from command registers (write-heavy).
+- Use predictable reset values and document them.
+- Use one IRQ status + one IRQ acknowledge path per block.
