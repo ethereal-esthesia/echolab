@@ -32,6 +32,7 @@ Requires SDL3 development libraries installed on your system.
 Default text color is green; add `-- --white` to render white-on-black.
 For frame-flip stress testing, add `-- --flip-test` to randomize all 40x24 chars to codes `0..15` each frame.
 Add `-- --fullscreen` to start the SDL window in fullscreen.
+VSync is on by default; add `-- --vsync-off` to disable it.
 
 Capture the last rendered frame before exit:
 

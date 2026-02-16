@@ -45,6 +45,7 @@ mod app {
 
         fn SDL_CreateRenderer(window: *mut SDL_Window, name: *const c_char) -> *mut SDL_Renderer;
         fn SDL_DestroyRenderer(renderer: *mut SDL_Renderer);
+        fn SDL_SetRenderVSync(renderer: *mut SDL_Renderer, vsync: c_int) -> bool;
 
         fn SDL_CreateTexture(
             renderer: *mut SDL_Renderer,
@@ -100,6 +101,7 @@ mod app {
         white: bool,
         flip_test: bool,
         fullscreen: bool,
+        vsync_off: bool,
     }
 
     impl Default for CliOptions {
@@ -111,6 +113,7 @@ mod app {
                 white: false,
                 flip_test: false,
                 fullscreen: false,
+                vsync_off: false,
             }
         }
     }
@@ -146,14 +149,19 @@ mod app {
                         options.fullscreen = true;
                         i += 1;
                     }
+                    "--vsync-off" => {
+                        options.vsync_off = true;
+                        i += 1;
+                    }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
                         println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
                         println!("Pass --fullscreen to start in fullscreen mode.");
+                        println!("VSync is enabled by default; pass --vsync-off to disable it.");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
@@ -199,6 +207,13 @@ mod app {
                 SDL_DestroyWindow(window);
                 SDL_Quit();
                 return Err(format!("SDL_CreateRenderer failed: {}", sdl_error()));
+            }
+            let vsync_value: c_int = if options.vsync_off { 0 } else { 1 };
+            if !SDL_SetRenderVSync(renderer, vsync_value) {
+                SDL_DestroyRenderer(renderer);
+                SDL_DestroyWindow(window);
+                SDL_Quit();
+                return Err(format!("SDL_SetRenderVSync failed: {}", sdl_error()));
             }
 
             let texture = SDL_CreateTexture(
@@ -263,7 +278,9 @@ mod app {
                 if start.elapsed() >= Duration::from_secs(cfg.sdl3_text40x24.auto_exit_seconds) {
                     break 'running;
                 }
-                SDL_Delay(16);
+                if options.vsync_off {
+                    SDL_Delay(16);
+                }
             }
 
             if let Some(path) = options
