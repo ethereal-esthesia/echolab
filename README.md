@@ -31,7 +31,7 @@ cargo run --example sdl3_text40x24 --features sdl3
 Requires SDL3 development libraries installed on your system.
 Default text color is green; add `-- --white` to render white-on-black.
 For frame-flip stress testing, add `-- --flip-test` to randomize all 40x24 chars to codes `0..15` each frame.
-For black/white flip testing, add `-- --bw-flip-test` (full-frame toggle), with `-- --bw-flip-ms <ms>` for interval control.
+For black/white flip testing, add `-- --bw-flip-test` (full-frame toggle every frame, through persistence blend).
 Add `-- --fullscreen` to start the SDL window in fullscreen.
 Default sync is crossover timing: host display refresh (autodetected from SDL mode; measured from VSync presents if unavailable) with Apple IIe NTSC guest pacing (`59.92Hz`).
 Default presentation also applies phosphor persistence (previous frame bleeds into next each refresh).

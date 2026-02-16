@@ -122,7 +122,6 @@ mod app {
         white: bool,
         flip_test: bool,
         bw_flip_test: bool,
-        bw_flip_interval_ms: u64,
         fullscreen: bool,
         vsync_off: bool,
         crossover_vsync_off: bool,
@@ -137,7 +136,6 @@ mod app {
                 white: false,
                 flip_test: false,
                 bw_flip_test: false,
-                bw_flip_interval_ms: 250,
                 fullscreen: false,
                 vsync_off: false,
                 crossover_vsync_off: false,
@@ -176,19 +174,6 @@ mod app {
                         options.bw_flip_test = true;
                         i += 1;
                     }
-                    "--bw-flip-ms" => {
-                        if i + 1 >= args.len() {
-                            return Err("missing value for --bw-flip-ms".to_owned());
-                        }
-                        let value = args[i + 1]
-                            .parse::<u64>()
-                            .map_err(|_| "invalid value for --bw-flip-ms".to_owned())?;
-                        if value == 0 {
-                            return Err("--bw-flip-ms must be > 0".to_owned());
-                        }
-                        options.bw_flip_interval_ms = value;
-                        i += 2;
-                    }
                     "--fullscreen" => {
                         options.fullscreen = true;
                         i += 1;
@@ -203,13 +188,12 @@ mod app {
                     }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--bw-flip-test] [--bw-flip-ms <ms>] [--fullscreen] [--vsync-off] [--crossover-vsync-off] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--bw-flip-test] [--fullscreen] [--vsync-off] [--crossover-vsync-off] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
                         println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
-                        println!("Pass --bw-flip-test for full-frame black/white flipping.");
-                        println!("Use --bw-flip-ms <ms> to control black/white interval (default 250ms).");
+                        println!("Pass --bw-flip-test for full-frame black/white flipping every frame.");
                         println!("Pass --fullscreen to start in fullscreen mode.");
                         println!("Default sync uses 60Hz host crossover to 59.92Hz Apple IIe timing.");
                         println!("Pass --crossover-vsync-off to disable renderer VSync while keeping crossover sync.");
@@ -301,7 +285,6 @@ mod app {
             let persistence = PersistenceBlend::default();
             let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let mut bw_is_white = false;
-            let mut bw_last_flip = Instant::now();
             let start = Instant::now();
             let (host_display_fps, mode_fps_known) =
                 query_host_display_fps(window).unwrap_or((HOST_DISPLAY_FPS_FALLBACK, false));
@@ -332,18 +315,14 @@ mod app {
                 }
 
                 if options.bw_flip_test {
-                    if bw_last_flip.elapsed() >= Duration::from_millis(options.bw_flip_interval_ms) {
-                        bw_is_white = !bw_is_white;
-                        bw_last_flip = Instant::now();
-                    }
+                    bw_is_white = !bw_is_white;
                     let fill_color = if bw_is_white { COLOR_WHITE } else { COLOR_BLACK };
                     frame.clear(fill_color);
                     frame.publish_frame();
-                    blended_frame.clear(fill_color);
                 } else {
                     video.render_frame(&ram, &mut frame);
-                    persistence.apply(frame.pixels(), blended_frame.pixels_mut());
                 }
+                persistence.apply(frame.pixels(), blended_frame.pixels_mut());
 
                 let pitch = (FRAME_WIDTH * std::mem::size_of::<u32>()) as i32;
                 if !SDL_UpdateTexture(
