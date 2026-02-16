@@ -1,6 +1,6 @@
 use echo_lab::screen_buffer::ScreenBuffer;
 use echo_lab::video::{
-    COLOR_BLACK, COLOR_PHOSPHOR_GREEN, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController,
+    CELL_WIDTH, COLOR_BLACK, COLOR_PHOSPHOR_GREEN, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController,
 };
 
 #[test]
@@ -78,4 +78,24 @@ fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
     assert_eq!(out.get_pixel(2, 6), Some(COLOR_PHOSPHOR_GREEN));
     assert_eq!(out.get_pixel(6, 6), Some(COLOR_PHOSPHOR_GREEN));
     assert_eq!(out.get_pixel(10, 6), Some(COLOR_PHOSPHOR_GREEN));
+}
+
+#[test]
+fn text_video_d_has_hard_left_edge_and_differs_from_o() {
+    let mut ram = [0u8; 65536];
+    ram[0x0400] = b'D';
+    ram[0x0401] = b'O';
+
+    let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
+    let video = TextVideoController::default();
+    video.render_frame(&ram, &mut out);
+
+    // Row 1 of D now has a hard left edge. With double-wide pixels this is x=0..1.
+    assert_eq!(out.get_pixel(0, 2), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(1, 2), Some(COLOR_PHOSPHOR_GREEN));
+
+    // O stays rounded and should not light the far-left pair at row 1.
+    let o_cell_x = CELL_WIDTH;
+    assert_eq!(out.get_pixel(o_cell_x, 2), Some(COLOR_BLACK));
+    assert_eq!(out.get_pixel(o_cell_x + 1, 2), Some(COLOR_BLACK));
 }
