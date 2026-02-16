@@ -4,12 +4,12 @@ use echo_lab::video::{
 };
 
 fn main() {
-    let mut ram = [encode_normal_ascii(b' '); 65536];
+    let mut ram = [b' '; 65536];
     let message = b"HELLO WORLD";
     let base = 0x0400usize;
 
     for (i, ch) in message.iter().enumerate() {
-        ram[base + i] = encode_normal_ascii(*ch);
+        ram[base + i] = *ch;
     }
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
@@ -36,8 +36,4 @@ fn main() {
     println!("Top text row (cell occupancy):");
     println!("{}", row_preview);
     println!("Expected message in RAM: HELLO WORLD");
-}
-
-fn encode_normal_ascii(ch: u8) -> u8 {
-    ch.wrapping_add(32)
 }

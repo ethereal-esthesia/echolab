@@ -252,12 +252,12 @@ mod app {
         const HELLO: &[u8] = b"HELLO WORLD";
 
         for i in 0..(COLS * ROWS) {
-            ram[text_base + i] = encode_normal_ascii(b' ');
+            ram[text_base + i] = b' ';
         }
 
         for row in [0usize, 1usize] {
             for (i, ch) in HELLO.iter().enumerate() {
-                ram[text_base + row * COLS + i] = encode_normal_ascii(*ch);
+                ram[text_base + row * COLS + i] = *ch;
             }
         }
 
@@ -269,10 +269,6 @@ mod app {
                 ram[text_base + row * COLS + col] = code as u8;
             }
         }
-    }
-
-    fn encode_normal_ascii(ch: u8) -> u8 {
-        ch.wrapping_add(32)
     }
 }
 
