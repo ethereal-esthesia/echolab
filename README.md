@@ -1,6 +1,6 @@
 # Echo Lab
 
-Echo Lab is a Rust workspace for emulator experiments.
+EchoLab is a repository for retro machines emulation and experimentation.
 
 ## Current Scope
 
