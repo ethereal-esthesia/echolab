@@ -3,6 +3,7 @@ import argparse
 import pathlib
 import subprocess
 import tempfile
+import struct
 
 GLYPH_W = 7
 GLYPH_H = 8
@@ -47,13 +48,36 @@ def write_ppm(path: pathlib.Path, pix: bytes, w: int, h: int) -> None:
         f.write(pix)
 
 
+def write_bmp_24(path: pathlib.Path, pix: bytes, w: int, h: int) -> None:
+    row_stride = ((w * 3 + 3) // 4) * 4
+    img_size = row_stride * h
+    file_size = 14 + 40 + img_size
+
+    with path.open("wb") as f:
+        f.write(b"BM")
+        f.write(struct.pack("<IHHI", file_size, 0, 0, 54))
+        f.write(struct.pack("<IIIHHIIIIII", 40, w, h, 1, 24, 0, img_size, 2835, 2835, 0, 0))
+
+        pad = b"\x00" * (row_stride - w * 3)
+        for y in range(h - 1, -1, -1):
+            row = bytearray()
+            for x in range(w):
+                i = (y * w + x) * 3
+                r = pix[i]
+                g = pix[i + 1]
+                b = pix[i + 2]
+                row.extend((b, g, r))
+            f.write(row)
+            f.write(pad)
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Export Apple IIe text glyph ROM slice to editable PNG")
+    ap = argparse.ArgumentParser(description="Export Apple IIe text glyph ROM slice to editable BMP/PNG")
     ap.add_argument("--rom", required=True, help="Input ROM binary (e.g. retro_7x8_mono.bin)")
-    ap.add_argument("--out", required=True, help="Output image path (.png or .ppm)")
+    ap.add_argument("--out", required=True, help="Output image path (.bmp, .png, or .ppm)")
     ap.add_argument("--bank", type=int, default=0, choices=[0, 1, 2], help="ROM bank (0=normal,1=flash,2=mouse)")
     ap.add_argument("--start-code", type=int, default=128, help="Starting glyph code in bank (default 128 for active 0-127 set)")
-    ap.add_argument("--scale", type=int, default=8, help="Pixel scale factor for editing")
+    ap.add_argument("--scale", type=int, default=1, help="Pixel scale factor for editing (1 = 1:1)")
     args = ap.parse_args()
 
     rom_path = pathlib.Path(args.rom)
@@ -70,13 +94,18 @@ def main() -> int:
     pix, w, h = render_bitmap(rom, args.bank, args.start_code, args.scale)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    if out_path.suffix.lower() == ".bmp":
+        write_bmp_24(out_path, pix, w, h)
+        print(out_path)
+        return 0
+
     if out_path.suffix.lower() == ".ppm":
         write_ppm(out_path, pix, w, h)
         print(out_path)
         return 0
 
     if out_path.suffix.lower() != ".png":
-        raise SystemExit("output extension must be .png or .ppm")
+        raise SystemExit("output extension must be .bmp, .png, or .ppm")
 
     with tempfile.TemporaryDirectory() as td:
         ppm = pathlib.Path(td) / "tmp.ppm"

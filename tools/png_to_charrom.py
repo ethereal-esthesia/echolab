@@ -63,8 +63,8 @@ def pixel_on(pix: bytes, w: int, x: int, y: int) -> bool:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Import edited PNG/PPM glyph sheet into Apple IIe text ROM slice")
-    ap.add_argument("--in", dest="in_image", required=True, help="Input edited image (.png or .ppm)")
+    ap = argparse.ArgumentParser(description="Import edited BMP/PNG/PPM glyph sheet into Apple IIe text ROM slice")
+    ap.add_argument("--in", dest="in_image", required=True, help="Input edited image (.bmp, .png, or .ppm)")
     ap.add_argument("--rom-in", required=True, help="Source ROM file to patch")
     ap.add_argument("--rom-out", required=True, help="Destination ROM file")
     ap.add_argument("--bank", type=int, default=0, choices=[0, 1, 2], help="ROM bank (0=normal,1=flash,2=mouse)")

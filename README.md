@@ -63,22 +63,21 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 
 ## Edit Text ROM Glyphs
 
-Export the active glyph set (codes 0-127) to an editable PNG:
+Export the active glyph set (codes 0-127) to an editable 1:1 BMP:
 
 ```bash
 python3 tools/charrom_to_png.py \
   --rom assets/roms/retro_7x8_mono.bin \
-  --out assets/roms/retro_7x8_mono_edit.png \
+  --out assets/roms/retro_7x8_mono_edit.bmp \
   --bank 0 \
-  --start-code 128 \
-  --scale 8
+  --start-code 128
 ```
 
-After editing that PNG, import it back into the ROM:
+After editing that BMP, import it back into the ROM:
 
 ```bash
 python3 tools/png_to_charrom.py \
-  --in assets/roms/retro_7x8_mono_edit.png \
+  --in assets/roms/retro_7x8_mono_edit.bmp \
   --rom-in assets/roms/retro_7x8_mono.bin \
   --rom-out assets/roms/retro_7x8_mono.bin \
   --bank 0 \
@@ -115,8 +114,8 @@ python3 tools/png_to_charrom.py \
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `echolab.toml`: default app config values (screenshot directory, auto-exit)
-- `tools/charrom_to_png.py`: export ROM glyphs to editable PNG
-- `tools/png_to_charrom.py`: import edited PNG back into ROM bytes
+- `tools/charrom_to_png.py`: export ROM glyphs to editable BMP/PNG
+- `tools/png_to_charrom.py`: import edited BMP/PNG back into ROM bytes
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan
