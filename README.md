@@ -34,7 +34,7 @@ For frame-flip stress testing, add `-- --flip-test` to randomize all 40x24 chars
 Add `-- --fullscreen` to start the SDL window in fullscreen.
 Default sync is crossover timing: host display refresh (autodetected from SDL mode; measured from VSync presents if unavailable) with Apple IIe NTSC guest pacing (`59.92Hz`).
 Default presentation also applies phosphor persistence (previous frame bleeds into next each refresh).
-Add `-- --crossfade-vsync-off` to keep crossover timing but disable renderer VSync.
+Add `-- --crossover-vsync-off` to keep crossover timing but disable renderer VSync (`--crossfade-vsync-off` is kept as an alias).
 Add `-- --vsync-off` for raw uncoupled timing.
 
 Capture the last rendered frame before exit:
@@ -113,6 +113,8 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `src/machines/`: machine descriptors
 - `src/rng.rs`: deterministic `FastRng` from benchmark logic
 - `src/screen_buffer.rs`: emulator display buffer (`u32` pixels + `frame_id`) + PPM screenshot export
+- `src/timing.rs`: reusable crossover timing and frame pacing helpers
+- `src/postfx.rs`: reusable post-processing (frame persistence blend)
 - `src/video/mod.rs`: text-only video controller that renders RAM into `ScreenBuffer`
 - `tests/capture.rs`: reusable capture option/capture behavior tests
 - `tests/config.rs`: parser tests for config behavior

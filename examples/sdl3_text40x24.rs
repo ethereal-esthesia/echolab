@@ -8,12 +8,13 @@ fn main() {
 mod app {
     use echo_lab::capture::CaptureOptions;
     use echo_lab::config::EchoLabConfig;
+    use echo_lab::postfx::PersistenceBlend;
     use echo_lab::rng::FastRng;
     use echo_lab::screen_buffer::ScreenBuffer;
+    use echo_lab::timing::{pace_to_next_frame, CrossoverSync};
     use echo_lab::video::{COLOR_BLACK, COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
     use std::ptr;
-    use std::thread;
     use std::time::{Duration, Instant};
 
     #[repr(C)]
@@ -101,7 +102,6 @@ mod app {
     const SDL_EVENT_QUIT: u32 = 0x100;
     const APPLE2E_NTSC_FPS: f64 = 59.92;
     const HOST_DISPLAY_FPS_FALLBACK: f64 = 60.0;
-    const PREV_FRAME_BLEED_NUM: u16 = 196; // ~76.6% previous-frame persistence
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -123,7 +123,7 @@ mod app {
         flip_test: bool,
         fullscreen: bool,
         vsync_off: bool,
-        crossfade_vsync_off: bool,
+        crossover_vsync_off: bool,
     }
 
     impl Default for CliOptions {
@@ -136,7 +136,7 @@ mod app {
                 flip_test: false,
                 fullscreen: false,
                 vsync_off: false,
-                crossfade_vsync_off: false,
+                crossover_vsync_off: false,
             }
         }
     }
@@ -176,20 +176,20 @@ mod app {
                         options.vsync_off = true;
                         i += 1;
                     }
-                    "--crossfade-vsync-off" => {
-                        options.crossfade_vsync_off = true;
+                    "--crossover-vsync-off" | "--crossfade-vsync-off" => {
+                        options.crossover_vsync_off = true;
                         i += 1;
                     }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--crossfade-vsync-off] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--crossover-vsync-off] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
                         println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
                         println!("Pass --fullscreen to start in fullscreen mode.");
                         println!("Default sync uses 60Hz host crossover to 59.92Hz Apple IIe timing.");
-                        println!("Pass --crossfade-vsync-off to disable renderer VSync while keeping crossover sync.");
+                        println!("Pass --crossover-vsync-off to disable renderer VSync while keeping crossover sync.");
                         println!("Pass --vsync-off for raw uncoupled timing.");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
@@ -238,7 +238,7 @@ mod app {
                 return Err(format!("SDL_CreateRenderer failed: {}", sdl_error()));
             }
             let use_crossover_sync = !options.vsync_off;
-            let crossover_vsync_off = options.crossfade_vsync_off;
+            let crossover_vsync_off = options.crossover_vsync_off;
             let vsync_value: c_int = if options.vsync_off || crossover_vsync_off {
                 0
             } else {
@@ -275,14 +275,13 @@ mod app {
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
             let mut blended_frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
             blended_frame.clear(COLOR_BLACK);
+            let persistence = PersistenceBlend::default();
             let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let start = Instant::now();
             let (host_display_fps, mode_fps_known) =
                 query_host_display_fps(window).unwrap_or((HOST_DISPLAY_FPS_FALLBACK, false));
-            let mut host_frame_period_secs = 1.0 / host_display_fps;
-            let mut guest_frames_per_host = APPLE2E_NTSC_FPS * host_frame_period_secs;
+            let mut crossover = CrossoverSync::new(APPLE2E_NTSC_FPS, host_display_fps);
             let mut next_host_deadline = Instant::now();
-            let mut guest_step_accumulator = 1.0f64;
             let mut last_present_instant: Option<Instant> = None;
 
             'running: loop {
@@ -298,9 +297,7 @@ mod app {
 
                 if options.flip_test {
                     if use_crossover_sync {
-                        guest_step_accumulator += guest_frames_per_host;
-                        let guest_steps = guest_step_accumulator.floor() as usize;
-                        guest_step_accumulator -= guest_steps as f64;
+                        let guest_steps = crossover.on_host_tick();
                         for _ in 0..guest_steps {
                             fill_text_page_random_0_to_15(&mut ram, 0x0400, &mut rng);
                         }
@@ -310,7 +307,7 @@ mod app {
                 }
 
                 video.render_frame(&ram, &mut frame);
-                apply_persistence_blend(frame.pixels(), blended_frame.pixels_mut());
+                persistence.apply(frame.pixels(), blended_frame.pixels_mut());
 
                 let pitch = (FRAME_WIDTH * std::mem::size_of::<u32>()) as i32;
                 if !SDL_UpdateTexture(
@@ -333,11 +330,7 @@ mod app {
                 if use_crossover_sync && !crossover_vsync_off && !mode_fps_known {
                     if let Some(prev) = last_present_instant {
                         let dt = presented_at.duration_since(prev).as_secs_f64();
-                        if dt > (1.0 / 240.0) && dt < (1.0 / 20.0) {
-                            // Exponential smoothing on present intervals for stable fallback.
-                            host_frame_period_secs = host_frame_period_secs * 0.9 + dt * 0.1;
-                            guest_frames_per_host = APPLE2E_NTSC_FPS * host_frame_period_secs;
-                        }
+                        crossover.update_host_period_from_measurement(dt);
                     }
                     last_present_instant = Some(presented_at);
                 }
@@ -345,10 +338,7 @@ mod app {
                     break 'running;
                 }
                 if use_crossover_sync && crossover_vsync_off {
-                    pace_to_next_frame(
-                        &mut next_host_deadline,
-                        Duration::from_secs_f64(host_frame_period_secs),
-                    );
+                    pace_to_next_frame(&mut next_host_deadline, crossover.host_period());
                 } else if options.vsync_off {
                     SDL_Delay(16);
                 }
@@ -402,49 +392,6 @@ mod app {
         for i in 0..(COLS * ROWS) {
             ram[text_base + i] = rng.next_u8() & 0x0f;
         }
-    }
-
-    fn pace_to_next_frame(next_frame_deadline: &mut Instant, frame_period: Duration) {
-        *next_frame_deadline += frame_period;
-        let now = Instant::now();
-        if now + Duration::from_millis(1) < *next_frame_deadline {
-            thread::sleep(*next_frame_deadline - now - Duration::from_millis(1));
-        }
-        while Instant::now() < *next_frame_deadline {
-            std::hint::spin_loop();
-        }
-        let now = Instant::now();
-        if now.duration_since(*next_frame_deadline) > frame_period.saturating_mul(2) {
-            *next_frame_deadline = now;
-        }
-    }
-
-    fn apply_persistence_blend(src: &[u32], dst: &mut [u32]) {
-        for (current, displayed) in src.iter().zip(dst.iter_mut()) {
-            let decayed_prev = scale_rgb(*displayed, PREV_FRAME_BLEED_NUM);
-            *displayed = max_rgb(*current, decayed_prev);
-        }
-    }
-
-    fn scale_rgb(pixel: u32, scale_num: u16) -> u32 {
-        let r = (((pixel >> 16) & 0xff) as u16 * scale_num / 256) as u32;
-        let g = (((pixel >> 8) & 0xff) as u16 * scale_num / 256) as u32;
-        let b = ((pixel & 0xff) as u16 * scale_num / 256) as u32;
-        0xff00_0000 | (r << 16) | (g << 8) | b
-    }
-
-    fn max_rgb(a: u32, b: u32) -> u32 {
-        let ar = (a >> 16) & 0xff;
-        let ag = (a >> 8) & 0xff;
-        let ab = a & 0xff;
-        let br = (b >> 16) & 0xff;
-        let bg = (b >> 8) & 0xff;
-        let bb = b & 0xff;
-
-        let r = ar.max(br);
-        let g = ag.max(bg);
-        let bl = ab.max(bb);
-        0xff00_0000 | (r << 16) | (g << 8) | bl
     }
 
     fn query_host_display_fps(window: *mut SDL_Window) -> Option<(f64, bool)> {
