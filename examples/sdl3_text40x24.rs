@@ -41,6 +41,7 @@ mod app {
             flags: u64,
         ) -> *mut SDL_Window;
         fn SDL_DestroyWindow(window: *mut SDL_Window);
+        fn SDL_SetWindowFullscreen(window: *mut SDL_Window, fullscreen: bool) -> bool;
 
         fn SDL_CreateRenderer(window: *mut SDL_Window, name: *const c_char) -> *mut SDL_Renderer;
         fn SDL_DestroyRenderer(renderer: *mut SDL_Renderer);
@@ -98,6 +99,7 @@ mod app {
         capture: CaptureOptions,
         white: bool,
         flip_test: bool,
+        fullscreen: bool,
     }
 
     impl Default for CliOptions {
@@ -108,6 +110,7 @@ mod app {
                 capture: CaptureOptions::default(),
                 white: false,
                 flip_test: false,
+                fullscreen: false,
             }
         }
     }
@@ -139,13 +142,18 @@ mod app {
                         options.flip_test = true;
                         i += 1;
                     }
+                    "--fullscreen" => {
+                        options.fullscreen = true;
+                        i += 1;
+                    }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
                         println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
+                        println!("Pass --fullscreen to start in fullscreen mode.");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
@@ -179,6 +187,11 @@ mod app {
             if window.is_null() {
                 SDL_Quit();
                 return Err(format!("SDL_CreateWindow failed: {}", sdl_error()));
+            }
+            if options.fullscreen && !SDL_SetWindowFullscreen(window, true) {
+                SDL_DestroyWindow(window);
+                SDL_Quit();
+                return Err(format!("SDL_SetWindowFullscreen failed: {}", sdl_error()));
             }
 
             let renderer = SDL_CreateRenderer(window, ptr::null());
