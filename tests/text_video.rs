@@ -12,8 +12,13 @@ fn text_video_renders_non_space_cells_on_even_scanlines_only() {
     let video = TextVideoController::default();
     video.render_frame(&ram, &mut out);
 
+    // 'A' row 0 is 0b0001000: only the center pixel lit.
+    assert_eq!(out.get_pixel(3, 0), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(0, 0), Some(COLOR_BLACK));
+    assert_eq!(out.get_pixel(6, 0), Some(COLOR_BLACK));
+
+    // Odd scanlines are forced black.
     for x in 0..7 {
-        assert_eq!(out.get_pixel(x, 0), Some(COLOR_PHOSPHOR_GREEN));
         assert_eq!(out.get_pixel(x, 1), Some(COLOR_BLACK));
     }
 }

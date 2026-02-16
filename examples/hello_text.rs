@@ -25,8 +25,11 @@ fn main() {
 
     let mut row_preview = String::with_capacity(TEXT_COLS);
     for col in 0..TEXT_COLS {
-        let px = col * CELL_WIDTH;
-        let on = out.get_pixel(px, 0) == Some(COLOR_PHOSPHOR_GREEN);
+        let any_lit = (0..CELL_WIDTH).any(|dx| {
+            let px = col * CELL_WIDTH + dx;
+            out.get_pixel(px, 0) == Some(COLOR_PHOSPHOR_GREEN)
+        });
+        let on = any_lit;
         row_preview.push(if on { '#' } else { '.' });
     }
 
