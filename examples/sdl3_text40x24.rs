@@ -157,7 +157,7 @@ mod app {
 
             let window = SDL_CreateWindow(
                 title.as_ptr(),
-                (FRAME_WIDTH as i32) * 3,
+                (FRAME_WIDTH as i32) * 3 / 2,
                 (FRAME_HEIGHT as i32) * 3 / 2,
                 SDL_WINDOW_RESIZABLE,
             );
