@@ -114,6 +114,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `src/machines/`: machine descriptors
 - `src/rng.rs`: deterministic `FastRng` from benchmark logic
 - `src/screen_buffer.rs`: emulator display buffer (`u32` pixels + `frame_id`) + PPM screenshot export
+- `src/sdl_display_core.rs`: reusable SDL display loop core (timing, persistence, capture, text scanout integration)
 - `src/timing.rs`: reusable crossover timing and frame pacing helpers
 - `src/postfx.rs`: reusable post-processing (frame persistence blend)
 - `src/video/mod.rs`: text-only video controller that renders RAM into `ScreenBuffer`

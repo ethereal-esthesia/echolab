@@ -4,6 +4,8 @@ pub mod lab;
 pub mod machines;
 pub mod postfx;
 pub mod rng;
+#[cfg(feature = "sdl3")]
+pub mod sdl_display_core;
 pub mod screen_buffer;
 pub mod timing;
 pub mod video;
