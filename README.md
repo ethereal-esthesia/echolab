@@ -33,6 +33,7 @@ Default text color is green; add `-- --white` to render white-on-black.
 For frame-flip stress testing, add `-- --flip-test` to randomize all 40x24 chars to codes `0..15` each frame.
 Add `-- --fullscreen` to start the SDL window in fullscreen.
 Default sync is crossover timing: host `60Hz` presentation with Apple IIe NTSC guest pacing (`59.92Hz`).
+Default presentation also applies phosphor persistence (previous frame bleeds into next each refresh).
 Add `-- --crossfade-vsync-off` to keep crossover timing but disable renderer VSync.
 Add `-- --vsync-off` for raw uncoupled timing.
 

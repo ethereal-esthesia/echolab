@@ -48,6 +48,10 @@ impl ScreenBuffer {
         self.pixels.as_slice()
     }
 
+    pub fn pixels_mut(&mut self) -> &mut [u32] {
+        self.pixels.as_mut_slice()
+    }
+
     pub fn clear(&mut self, color: u32) {
         self.pixels.fill(color);
     }

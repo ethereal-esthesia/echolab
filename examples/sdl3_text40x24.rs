@@ -10,7 +10,7 @@ mod app {
     use echo_lab::config::EchoLabConfig;
     use echo_lab::rng::FastRng;
     use echo_lab::screen_buffer::ScreenBuffer;
-    use echo_lab::video::{COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
+    use echo_lab::video::{COLOR_BLACK, COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
     use std::ptr;
     use std::thread;
@@ -84,6 +84,7 @@ mod app {
     const SDL_EVENT_QUIT: u32 = 0x100;
     const APPLE2E_NTSC_FPS: f64 = 59.92;
     const HOST_DISPLAY_FPS: f64 = 60.0;
+    const PREV_FRAME_BLEED_NUM: u16 = 196; // ~76.6% previous-frame persistence
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -255,6 +256,8 @@ mod app {
                 video = video.with_foreground_color(COLOR_WHITE);
             }
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
+            let mut blended_frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
+            blended_frame.clear(COLOR_BLACK);
             let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let start = Instant::now();
             let host_frame_period = Duration::from_secs_f64(1.0 / HOST_DISPLAY_FPS);
@@ -287,12 +290,13 @@ mod app {
                 }
 
                 video.render_frame(&ram, &mut frame);
+                apply_persistence_blend(frame.pixels(), blended_frame.pixels_mut());
 
                 let pitch = (FRAME_WIDTH * std::mem::size_of::<u32>()) as i32;
                 if !SDL_UpdateTexture(
                     texture,
                     ptr::null(),
-                    frame.pixels().as_ptr() as *const c_void,
+                    blended_frame.pixels().as_ptr() as *const c_void,
                     pitch,
                 ) {
                     break 'running;
@@ -317,7 +321,10 @@ mod app {
 
             if let Some(path) = options
                 .capture
-                .capture_frame_if_requested(&frame, &cfg.sdl3_text40x24.default_screenshot_dir)?
+                .capture_frame_if_requested(
+                    &blended_frame,
+                    &cfg.sdl3_text40x24.default_screenshot_dir,
+                )?
             {
                 println!("Saved screenshot to {}", path.display());
             }
@@ -375,6 +382,34 @@ mod app {
         if now.duration_since(*next_frame_deadline) > frame_period.saturating_mul(2) {
             *next_frame_deadline = now;
         }
+    }
+
+    fn apply_persistence_blend(src: &[u32], dst: &mut [u32]) {
+        for (current, displayed) in src.iter().zip(dst.iter_mut()) {
+            let decayed_prev = scale_rgb(*displayed, PREV_FRAME_BLEED_NUM);
+            *displayed = max_rgb(*current, decayed_prev);
+        }
+    }
+
+    fn scale_rgb(pixel: u32, scale_num: u16) -> u32 {
+        let r = (((pixel >> 16) & 0xff) as u16 * scale_num / 256) as u32;
+        let g = (((pixel >> 8) & 0xff) as u16 * scale_num / 256) as u32;
+        let b = ((pixel & 0xff) as u16 * scale_num / 256) as u32;
+        0xff00_0000 | (r << 16) | (g << 8) | b
+    }
+
+    fn max_rgb(a: u32, b: u32) -> u32 {
+        let ar = (a >> 16) & 0xff;
+        let ag = (a >> 8) & 0xff;
+        let ab = a & 0xff;
+        let br = (b >> 16) & 0xff;
+        let bg = (b >> 8) & 0xff;
+        let bb = b & 0xff;
+
+        let r = ar.max(br);
+        let g = ag.max(bg);
+        let bl = ab.max(bb);
+        0xff00_0000 | (r << 16) | (g << 8) | bl
     }
 }
 
