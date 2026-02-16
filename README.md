@@ -162,5 +162,5 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 | `+0x07` | `VPT_ROW_OFFSET_BYTE` | viewport row offset (256-byte boundary) |
 | `+0x08` | `VPT_X_OFFSET_PX` | `0x00-0x06` |
 | `+0x09` | `VPT_Y_OFFSET_PX` | `0x00-0x07` |
-| `+0x0A` | `VBL_SYNC_WRT` | write any value to request sync/commit |
-| `+0x0B` | `VBL_SYNC_RD` | bit0=`in_vblank`, bit1=`write_pending` |
+| `+0x0A` | `VBL_SYNC` | write: apply frame/viewport settings at blanking period; read: bit0=`in_vblank`, bit1=`write_pending` |
+| `+0x0B` | `SWITCH_80_COL` | write: bit0 turns 80-col mode on, bit1 turns it off; read: bit0=`1` when 80-col mode is on, `0` when off |
