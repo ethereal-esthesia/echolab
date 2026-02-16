@@ -158,8 +158,8 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 | `+0x02/+0x03` | `VPT_BASE_LO/HI` | `HI = 0x00` turns off viewport |
 | `+0x04` | `VPT_COLS` | viewport width |
 | `+0x05` | `VPT_ROWS` | viewport height |
-| `+0x06` | `VPT_COL_OFFSET_BYTE` | viewport scroll column offset |
-| `+0x07` | `VPT_ROW_OFFSET_BYTE` | viewport row offset (256-byte boundary) |
+| `+0x06` | `VPT_COL_OFFSET_CHAR` | viewport scroll column offset |
+| `+0x07` | `VPT_ROW_OFFSET_CHAR` | viewport row offset (256-byte boundary) |
 | `+0x08` | `VPT_X_OFFSET_PX` | `0x00-0x06` |
 | `+0x09` | `VPT_Y_OFFSET_PX` | `0x00-0x07` |
 | `+0x0A` | `VBL_SYNC` | write: apply frame/viewport settings at blanking period; read: bit0=`in_vblank`, bit1=`write_pending` |
