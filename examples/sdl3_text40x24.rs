@@ -6,6 +6,7 @@ fn main() {
 
 #[cfg(feature = "sdl3")]
 mod app {
+    use echo_lab::capture::CaptureOptions;
     use echo_lab::config::EchoLabConfig;
     use echo_lab::screen_buffer::ScreenBuffer;
     use echo_lab::video::{FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
@@ -93,8 +94,7 @@ mod app {
     struct CliOptions {
         config_path: String,
         config_path_explicit: bool,
-        screenshot_dir_override: Option<String>,
-        screenshot_requested: bool,
+        capture: CaptureOptions,
     }
 
     impl Default for CliOptions {
@@ -102,8 +102,7 @@ mod app {
             Self {
                 config_path: "echolab.toml".to_owned(),
                 config_path_explicit: false,
-                screenshot_dir_override: None,
-                screenshot_requested: false,
+                capture: CaptureOptions::default(),
             }
         }
     }
@@ -114,16 +113,11 @@ mod app {
             let args: Vec<String> = std::env::args().skip(1).collect();
             let mut i = 0usize;
             while i < args.len() {
+                if options.capture.parse_arg(&args, &mut i)? {
+                    continue;
+                }
+
                 match args[i].as_str() {
-                    "--screenshot" => {
-                        options.screenshot_requested = true;
-                        if i + 1 < args.len() && !args[i + 1].starts_with('-') {
-                            options.screenshot_dir_override = Some(args[i + 1].clone());
-                            i += 2;
-                        } else {
-                            i += 1;
-                        }
-                    }
                     "--config" => {
                         if i + 1 >= args.len() {
                             return Err("missing value for --config".to_owned());
@@ -138,9 +132,7 @@ mod app {
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
-                        println!(
-                            "If --screenshot dir is omitted, uses sdl3_text40x24.default_screenshot_dir from config."
-                        );
+                        println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
                     }
                     other => return Err(format!("unknown argument: {other}")),
@@ -148,25 +140,12 @@ mod app {
             }
             Ok(options)
         }
-
-        fn screenshot_dir(&self, cfg: &EchoLabConfig) -> Option<String> {
-            if !self.screenshot_requested {
-                return None;
-            }
-
-            Some(
-                self.screenshot_dir_override
-                    .clone()
-                    .unwrap_or_else(|| cfg.sdl3_text40x24.default_screenshot_dir.clone()),
-            )
-        }
     }
 
     pub fn run() -> Result<(), String> {
         let options = CliOptions::parse()?;
         let cfg =
             EchoLabConfig::load_from_path(&options.config_path, options.config_path_explicit)?;
-        let screenshot_dir = options.screenshot_dir(&cfg);
 
         let title = CString::new("Echo Lab SDL3 Text 40x24").map_err(|e| e.to_string())?;
 
@@ -254,10 +233,10 @@ mod app {
                 SDL_Delay(16);
             }
 
-            if let Some(dir) = screenshot_dir.as_deref() {
-                let path = frame
-                    .save_timestamped_ppm_in_dir(dir)
-                    .map_err(|e| format!("failed to save screenshot in '{}': {}", dir, e))?;
+            if let Some(path) = options
+                .capture
+                .capture_frame_if_requested(&frame, &cfg.sdl3_text40x24.default_screenshot_dir)?
+            {
                 println!("Saved screenshot to {}", path.display());
             }
 

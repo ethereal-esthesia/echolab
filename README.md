@@ -75,6 +75,7 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 ## Project Layout
 
 - `src/lib.rs`: library modules exported for app + tests
+- `src/capture.rs`: reusable screenshot CLI/capture flow for emulator frontends
 - `src/config.rs`: typed config loader for `echolab.toml`
 - `src/main.rs`: CLI entry and output
 - `src/lab.rs`: `Lab` model and machine list
@@ -82,12 +83,13 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 - `src/rng.rs`: deterministic `FastRng` from benchmark logic
 - `src/screen_buffer.rs`: emulator display buffer (`u32` pixels + `frame_id`) + PPM screenshot export
 - `src/video/mod.rs`: text-only video controller that renders RAM into `ScreenBuffer`
+- `tests/capture.rs`: reusable capture option/capture behavior tests
+- `tests/config.rs`: parser tests for config behavior
 - `tests/rng_determinism.rs`: integration tests for RNG behavior
 - `tests/screen_buffer.rs`: integration tests for display buffer behavior
 - `tests/text_video.rs`: integration tests for text scanout behavior
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
-- `echolab.toml`: default app config values (screenshot path, auto-exit)
 - `echolab.toml`: default app config values (screenshot directory, auto-exit)
 - `archive/`: imported legacy projects kept for reference
 
