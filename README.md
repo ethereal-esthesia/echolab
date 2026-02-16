@@ -74,7 +74,7 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 Export the full glyph set (codes 0-255) to an editable 1:1 BMP:
 
 ```bash
-python3 tools/charrom_to_png.py \
+python3 tools/charrom_export.py \
   --rom assets/roms/retro_7x8_mono.bin \
   --out assets/roms/retro_7x8_mono_edit.bmp \
   --bank 0
@@ -83,7 +83,7 @@ python3 tools/charrom_to_png.py \
 After editing that BMP, import it back into the ROM:
 
 ```bash
-python3 tools/png_to_charrom.py \
+python3 tools/charrom_import.py \
   --in assets/roms/retro_7x8_mono_edit.bmp \
   --rom-in assets/roms/retro_7x8_mono.bin \
   --rom-out assets/roms/retro_7x8_mono.bin \
@@ -128,8 +128,8 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `echolab.toml`: default app config values (screenshot directory, auto-exit)
-- `tools/charrom_to_png.py`: export ROM glyphs to editable BMP/PNG
-- `tools/png_to_charrom.py`: import edited BMP/PNG back into ROM bytes
+- `tools/charrom_export.py`: export ROM glyphs to editable BMP/PNG
+- `tools/charrom_import.py`: import edited BMP/PNG back into ROM bytes
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan
