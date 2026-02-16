@@ -10,7 +10,8 @@ pub const FRAME_WIDTH: usize = TEXT_COLS * CELL_WIDTH;
 pub const FRAME_HEIGHT: usize = TEXT_ROWS * CELL_HEIGHT;
 
 pub const COLOR_BLACK: u32 = 0xff00_0000;
-pub const COLOR_PHOSPHOR_GREEN: u32 = 0xffff_ffff;
+pub const COLOR_PHOSPHOR_GREEN: u32 = 0xff00_ff00;
+pub const COLOR_WHITE: u32 = 0xffff_ffff;
 
 const TEXT_DISPLAY_ROM: &[u8; 6144] = include_bytes!("../../assets/roms/retro_7x8_mono.bin");
 const TEXT_DISPLAY_BANK_SIZE: usize = 2048;
@@ -18,6 +19,7 @@ const NORMAL_BANK_OFFSET: usize = 0;
 
 pub struct TextVideoController {
     text_base: u16,
+    foreground_color: u32,
 }
 
 impl Default for TextVideoController {
@@ -28,7 +30,15 @@ impl Default for TextVideoController {
 
 impl TextVideoController {
     pub fn new(text_base: u16) -> Self {
-        Self { text_base }
+        Self {
+            text_base,
+            foreground_color: COLOR_PHOSPHOR_GREEN,
+        }
+    }
+
+    pub fn with_foreground_color(mut self, color: u32) -> Self {
+        self.foreground_color = color;
+        self
     }
 
     pub fn frame_dimensions(&self) -> (usize, usize) {
@@ -69,7 +79,7 @@ impl TextVideoController {
                 // Apple IIe glyph rows in this ROM table are stored LSB-left for 7-bit pixels.
                 let glyph_on = ((row_bits >> glyph_x) & 0x01) != 0;
                 let color = if glyph_on {
-                    COLOR_PHOSPHOR_GREEN
+                    self.foreground_color
                 } else {
                     COLOR_BLACK
                 };

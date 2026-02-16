@@ -9,7 +9,7 @@ mod app {
     use echo_lab::capture::CaptureOptions;
     use echo_lab::config::EchoLabConfig;
     use echo_lab::screen_buffer::ScreenBuffer;
-    use echo_lab::video::{FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
+    use echo_lab::video::{COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
     use std::ptr;
     use std::time::{Duration, Instant};
@@ -95,6 +95,7 @@ mod app {
         config_path: String,
         config_path_explicit: bool,
         capture: CaptureOptions,
+        white: bool,
     }
 
     impl Default for CliOptions {
@@ -103,6 +104,7 @@ mod app {
                 config_path: "echolab.toml".to_owned(),
                 config_path_explicit: false,
                 capture: CaptureOptions::default(),
+                white: false,
             }
         }
     }
@@ -126,11 +128,16 @@ mod app {
                         options.config_path_explicit = true;
                         i += 2;
                     }
+                    "--white" => {
+                        options.white = true;
+                        i += 1;
+                    }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
+                        println!("Default text color is green; pass --white for white-on-black.");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
@@ -190,7 +197,10 @@ mod app {
             let mut ram = [b' '; 65536];
             fill_text_page_demo_layout(&mut ram, 0x0400);
 
-            let video = TextVideoController::default();
+            let mut video = TextVideoController::default();
+            if options.white {
+                video = video.with_foreground_color(COLOR_WHITE);
+            }
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
             let start = Instant::now();
 

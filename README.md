@@ -29,6 +29,7 @@ cargo run --example sdl3_text40x24 --features sdl3
 ```
 
 Requires SDL3 development libraries installed on your system.
+Default text color is green; add `-- --white` to render white-on-black.
 
 Capture the last rendered frame before exit:
 
