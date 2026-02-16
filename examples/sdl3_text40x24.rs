@@ -83,6 +83,7 @@ mod app {
     const SDL_PIXELFORMAT_ARGB8888: u32 = 372_645_892;
     const SDL_EVENT_QUIT: u32 = 0x100;
     const APPLE2E_NTSC_FPS: f64 = 59.92;
+    const HOST_DISPLAY_FPS: f64 = 60.0;
 
     fn sdl_error() -> String {
         // SAFETY: SDL_GetError returns a valid null-terminated C string pointer or null.
@@ -104,7 +105,7 @@ mod app {
         flip_test: bool,
         fullscreen: bool,
         vsync_off: bool,
-        apple2e_ntsc_sync: bool,
+        crossfade_vsync_off: bool,
     }
 
     impl Default for CliOptions {
@@ -117,7 +118,7 @@ mod app {
                 flip_test: false,
                 fullscreen: false,
                 vsync_off: false,
-                apple2e_ntsc_sync: false,
+                crossfade_vsync_off: false,
             }
         }
     }
@@ -157,20 +158,21 @@ mod app {
                         options.vsync_off = true;
                         i += 1;
                     }
-                    "--apple2e-ntsc-sync" => {
-                        options.apple2e_ntsc_sync = true;
+                    "--crossfade-vsync-off" => {
+                        options.crossfade_vsync_off = true;
                         i += 1;
                     }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--apple2e-ntsc-sync] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--fullscreen] [--vsync-off] [--crossfade-vsync-off] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
                         println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
                         println!("Pass --fullscreen to start in fullscreen mode.");
-                        println!("VSync is enabled by default; pass --vsync-off to disable it.");
-                        println!("Pass --apple2e-ntsc-sync to pace to 59.92 Hz (disables renderer VSync).");
+                        println!("Default sync uses 60Hz host crossover to 59.92Hz Apple IIe timing.");
+                        println!("Pass --crossfade-vsync-off to disable renderer VSync while keeping crossover sync.");
+                        println!("Pass --vsync-off for raw uncoupled timing.");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
@@ -217,8 +219,9 @@ mod app {
                 SDL_Quit();
                 return Err(format!("SDL_CreateRenderer failed: {}", sdl_error()));
             }
-            let use_apple2e_ntsc_sync = options.apple2e_ntsc_sync;
-            let vsync_value: c_int = if options.vsync_off || use_apple2e_ntsc_sync {
+            let use_crossover_sync = !options.vsync_off;
+            let crossover_vsync_off = options.crossfade_vsync_off;
+            let vsync_value: c_int = if options.vsync_off || crossover_vsync_off {
                 0
             } else {
                 1
@@ -254,8 +257,10 @@ mod app {
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
             let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let start = Instant::now();
-            let frame_period = Duration::from_secs_f64(1.0 / APPLE2E_NTSC_FPS);
-            let mut next_frame_deadline = Instant::now();
+            let host_frame_period = Duration::from_secs_f64(1.0 / HOST_DISPLAY_FPS);
+            let guest_frames_per_host = APPLE2E_NTSC_FPS / HOST_DISPLAY_FPS;
+            let mut next_host_deadline = Instant::now();
+            let mut guest_step_accumulator = 1.0f64;
 
             'running: loop {
                 let mut event = SDL_Event {
@@ -269,7 +274,16 @@ mod app {
                 }
 
                 if options.flip_test {
-                    fill_text_page_random_0_to_15(&mut ram, 0x0400, &mut rng);
+                    if use_crossover_sync {
+                        guest_step_accumulator += guest_frames_per_host;
+                        let guest_steps = guest_step_accumulator.floor() as usize;
+                        guest_step_accumulator -= guest_steps as f64;
+                        for _ in 0..guest_steps {
+                            fill_text_page_random_0_to_15(&mut ram, 0x0400, &mut rng);
+                        }
+                    } else {
+                        fill_text_page_random_0_to_15(&mut ram, 0x0400, &mut rng);
+                    }
                 }
 
                 video.render_frame(&ram, &mut frame);
@@ -294,8 +308,8 @@ mod app {
                 if start.elapsed() >= Duration::from_secs(cfg.sdl3_text40x24.auto_exit_seconds) {
                     break 'running;
                 }
-                if use_apple2e_ntsc_sync {
-                    pace_to_next_frame(&mut next_frame_deadline, frame_period);
+                if use_crossover_sync && crossover_vsync_off {
+                    pace_to_next_frame(&mut next_host_deadline, host_frame_period);
                 } else if options.vsync_off {
                     SDL_Delay(16);
                 }

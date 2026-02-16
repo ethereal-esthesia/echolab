@@ -32,8 +32,9 @@ Requires SDL3 development libraries installed on your system.
 Default text color is green; add `-- --white` to render white-on-black.
 For frame-flip stress testing, add `-- --flip-test` to randomize all 40x24 chars to codes `0..15` each frame.
 Add `-- --fullscreen` to start the SDL window in fullscreen.
-VSync is on by default; add `-- --vsync-off` to disable it.
-Add `-- --apple2e-ntsc-sync` to pace frames at Apple IIe NTSC rate (`59.92 Hz`, from archive reference) with emulator-controlled timing.
+Default sync is crossover timing: host `60Hz` presentation with Apple IIe NTSC guest pacing (`59.92Hz`).
+Add `-- --crossfade-vsync-off` to keep crossover timing but disable renderer VSync.
+Add `-- --vsync-off` for raw uncoupled timing.
 
 Capture the last rendered frame before exit:
 
