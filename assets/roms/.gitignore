@@ -1,0 +1,11 @@
+# Ignore everything in this ROM folder by default.
+*
+
+# Keep this allowlist file tracked.
+!.gitignore
+
+# Project-provided ROM/font assets.
+!retro_7x8_mono.bin
+!retro_7x8_mono_original.bin
+!retro_7x8_mono_edit.bmp
+!retro_7x8_mono_edit.png

@@ -17,7 +17,8 @@ out/
 # Legacy reference imports
 archive/
 
-# ROM directories (case-insensitive)
-**/[Rr][Oo][Mm]/
-**/[Rr][Oo][Mm][Ss]/
-**/*[Rr][Oo][Mm]*/
+# ROM folders (case-insensitive): ignore contents by default
+**/*[Rr][Oo][Mm]*/**
+
+# Allow per-folder ROM allowlists
+!**/*[Rr][Oo][Mm]*/.gitignore
