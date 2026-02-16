@@ -63,3 +63,18 @@ fn text_video_uses_correct_left_to_right_glyph_bit_order() {
     assert_eq!(out.get_pixel(1, 2), Some(COLOR_PHOSPHOR_GREEN));
     assert_eq!(out.get_pixel(5, 2), Some(COLOR_BLACK));
 }
+
+#[test]
+fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
+    let mut ram = [0u8; 65536];
+    ram[0x0400] = b'H';
+
+    let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
+    let video = TextVideoController::default();
+    video.render_frame(&ram, &mut out);
+
+    // 'H' row 3 is 0b0111110 in this ROM and should appear at y = 3 * 2.
+    assert_eq!(out.get_pixel(1, 6), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(3, 6), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(5, 6), Some(COLOR_PHOSPHOR_GREEN));
+}

@@ -3,7 +3,8 @@ use crate::screen_buffer::ScreenBuffer;
 pub const TEXT_COLS: usize = 40;
 pub const TEXT_ROWS: usize = 24;
 pub const CELL_WIDTH: usize = 7;
-pub const CELL_HEIGHT: usize = 8;
+pub const GLYPH_HEIGHT: usize = 8;
+pub const CELL_HEIGHT: usize = GLYPH_HEIGHT * 2;
 pub const FRAME_WIDTH: usize = TEXT_COLS * CELL_WIDTH;
 pub const FRAME_HEIGHT: usize = TEXT_ROWS * CELL_HEIGHT;
 
@@ -14,7 +15,7 @@ const TEXT_DISPLAY_ROM: &[u8; 6144] =
     include_bytes!("../../assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin");
 const TEXT_DISPLAY_BANK_SIZE: usize = 2048;
 const NORMAL_BANK_OFFSET: usize = 0;
-const NON_INVERSE_GLYPH_OFFSET: usize = 128 * CELL_HEIGHT;
+const NON_INVERSE_GLYPH_OFFSET: usize = 128 * GLYPH_HEIGHT;
 
 pub struct TextVideoController {
     text_base: u16,
@@ -55,21 +56,19 @@ impl TextVideoController {
         let x0 = col * CELL_WIDTH;
         let y0 = row * CELL_HEIGHT;
         let code = (ch & 0x7f) as usize;
-        let glyph_base = NORMAL_BANK_OFFSET + NON_INVERSE_GLYPH_OFFSET + code * CELL_HEIGHT;
+        let glyph_base = NORMAL_BANK_OFFSET + NON_INVERSE_GLYPH_OFFSET + code * GLYPH_HEIGHT;
 
-        debug_assert!(glyph_base + CELL_HEIGHT <= TEXT_DISPLAY_BANK_SIZE);
+        debug_assert!(glyph_base + GLYPH_HEIGHT <= TEXT_DISPLAY_BANK_SIZE);
 
-        for y in 0..CELL_HEIGHT {
-            // "Every-other-scanline" model: odd scanlines are black.
-            let active_scanline = y % 2 == 0;
-            let row_bits = TEXT_DISPLAY_ROM[glyph_base + y] & 0x7f;
+        for glyph_y in 0..GLYPH_HEIGHT {
+            let row_bits = TEXT_DISPLAY_ROM[glyph_base + glyph_y] & 0x7f;
+            let py = y0 + glyph_y * 2;
 
-            let py = y0 + y;
             for x in 0..CELL_WIDTH {
                 let px = x0 + x;
                 // Apple IIe glyph rows in this ROM table are stored LSB-left for 7-bit pixels.
                 let glyph_on = ((row_bits >> x) & 0x01) != 0;
-                let color = if active_scanline && glyph_on {
+                let color = if glyph_on {
                     COLOR_PHOSPHOR_GREEN
                 } else {
                     COLOR_BLACK
