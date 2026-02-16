@@ -8,6 +8,7 @@ fn main() {
 mod app {
     use echo_lab::capture::CaptureOptions;
     use echo_lab::config::EchoLabConfig;
+    use echo_lab::rng::FastRng;
     use echo_lab::screen_buffer::ScreenBuffer;
     use echo_lab::video::{COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
     use std::ffi::{CStr, CString, c_char, c_int, c_void};
@@ -96,6 +97,7 @@ mod app {
         config_path_explicit: bool,
         capture: CaptureOptions,
         white: bool,
+        flip_test: bool,
     }
 
     impl Default for CliOptions {
@@ -105,6 +107,7 @@ mod app {
                 config_path_explicit: false,
                 capture: CaptureOptions::default(),
                 white: false,
+                flip_test: false,
             }
         }
     }
@@ -132,12 +135,17 @@ mod app {
                         options.white = true;
                         i += 1;
                     }
+                    "--flip-test" => {
+                        options.flip_test = true;
+                        i += 1;
+                    }
                     "-h" | "--help" => {
                         println!(
-                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--screenshot [dir]]"
+                            "Usage: cargo run --example sdl3_text40x24 --features sdl3 -- [--config <path>] [--white] [--flip-test] [--screenshot [dir]]"
                         );
                         println!("Config default path: ./echolab.toml");
                         println!("Default text color is green; pass --white for white-on-black.");
+                        println!("Pass --flip-test to randomize all cells with codes 0..15 every frame.");
                         println!("Screenshots are always saved as screenshot_<timestamp>.ppm.");
                         println!("If --screenshot dir is omitted, default comes from config.");
                         std::process::exit(0);
@@ -202,6 +210,7 @@ mod app {
                 video = video.with_foreground_color(COLOR_WHITE);
             }
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
+            let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let start = Instant::now();
 
             'running: loop {
@@ -213,6 +222,10 @@ mod app {
                     if event.event_type == SDL_EVENT_QUIT {
                         break 'running;
                     }
+                }
+
+                if options.flip_test {
+                    fill_text_page_random_0_to_15(&mut ram, 0x0400, &mut rng);
                 }
 
                 video.render_frame(&ram, &mut frame);
@@ -276,6 +289,14 @@ mod app {
             if row < ROWS {
                 ram[text_base + row * COLS + col] = code as u8;
             }
+        }
+    }
+
+    fn fill_text_page_random_0_to_15(ram: &mut [u8; 65536], text_base: usize, rng: &mut FastRng) {
+        const COLS: usize = 40;
+        const ROWS: usize = 24;
+        for i in 0..(COLS * ROWS) {
+            ram[text_base + i] = rng.next_u8() & 0x0f;
         }
     }
 }
