@@ -16,9 +16,17 @@ out/
 
 # Legacy reference imports
 archive/
+screenshots/
+tools/__pycache__/
 
 # ROM folders (case-insensitive): ignore contents by default
 **/*[Rr][Oo][Mm]*/**
 
 # Allow per-folder ROM allowlists
 !**/*[Rr][Oo][Mm]*/.gitignore
+
+# DOC folders (case-insensitive): ignore contents by default
+**/*[Dd][Oo][Cc]*/**
+
+# Allow per-folder DOC allowlists
+!**/*[Dd][Oo][Cc]*/.gitignore
