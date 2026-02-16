@@ -2,7 +2,8 @@ use crate::screen_buffer::ScreenBuffer;
 
 pub const TEXT_COLS: usize = 40;
 pub const TEXT_ROWS: usize = 24;
-pub const CELL_WIDTH: usize = 7;
+pub const GLYPH_WIDTH: usize = 7;
+pub const CELL_WIDTH: usize = GLYPH_WIDTH * 2;
 pub const GLYPH_HEIGHT: usize = 8;
 pub const CELL_HEIGHT: usize = GLYPH_HEIGHT * 2;
 pub const FRAME_WIDTH: usize = TEXT_COLS * CELL_WIDTH;
@@ -66,8 +67,9 @@ impl TextVideoController {
 
             for x in 0..CELL_WIDTH {
                 let px = x0 + x;
+                let glyph_x = x / 2;
                 // Apple IIe glyph rows in this ROM table are stored LSB-left for 7-bit pixels.
-                let glyph_on = ((row_bits >> x) & 0x01) != 0;
+                let glyph_on = ((row_bits >> glyph_x) & 0x01) != 0;
                 let color = if glyph_on {
                     COLOR_PHOSPHOR_GREEN
                 } else {

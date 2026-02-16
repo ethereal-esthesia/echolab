@@ -12,10 +12,11 @@ fn text_video_renders_non_space_cells_on_even_scanlines_only() {
     let video = TextVideoController::default();
     video.render_frame(&ram, &mut out);
 
-    // 'A' row 0 is 0b0001000: only the center pixel lit.
-    assert_eq!(out.get_pixel(3, 0), Some(COLOR_PHOSPHOR_GREEN));
+    // 'A' row 0 is 0b0001000: only the center logical pixel lit, doubled horizontally.
+    assert_eq!(out.get_pixel(6, 0), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(7, 0), Some(COLOR_PHOSPHOR_GREEN));
     assert_eq!(out.get_pixel(0, 0), Some(COLOR_BLACK));
-    assert_eq!(out.get_pixel(6, 0), Some(COLOR_BLACK));
+    assert_eq!(out.get_pixel(13, 0), Some(COLOR_BLACK));
 
     // Odd scanlines are forced black.
     for x in 0..7 {
@@ -32,7 +33,7 @@ fn text_video_keeps_space_cells_black_even_on_active_scanlines() {
     let video = TextVideoController::default();
     video.render_frame(&ram, &mut out);
 
-    for x in 7..14 {
+    for x in 14..28 {
         assert_eq!(out.get_pixel(x, 0), Some(COLOR_BLACK));
         assert_eq!(out.get_pixel(x, 1), Some(COLOR_BLACK));
     }
@@ -59,9 +60,9 @@ fn text_video_uses_correct_left_to_right_glyph_bit_order() {
     video.render_frame(&ram, &mut out);
 
     // 'F' row 1 in this ROM is 0b0000010 for the vertical stroke; with correct
-    // orientation this appears near the left edge (x=1), not mirrored to x=5.
-    assert_eq!(out.get_pixel(1, 2), Some(COLOR_PHOSPHOR_GREEN));
-    assert_eq!(out.get_pixel(5, 2), Some(COLOR_BLACK));
+    // orientation this appears near the left edge (logical x=1, doubled to x=2/3).
+    assert_eq!(out.get_pixel(2, 2), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(10, 2), Some(COLOR_BLACK));
 }
 
 #[test]
@@ -74,7 +75,7 @@ fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
     video.render_frame(&ram, &mut out);
 
     // 'H' row 3 is 0b0111110 in this ROM and should appear at y = 3 * 2.
-    assert_eq!(out.get_pixel(1, 6), Some(COLOR_PHOSPHOR_GREEN));
-    assert_eq!(out.get_pixel(3, 6), Some(COLOR_PHOSPHOR_GREEN));
-    assert_eq!(out.get_pixel(5, 6), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(2, 6), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(6, 6), Some(COLOR_PHOSPHOR_GREEN));
+    assert_eq!(out.get_pixel(10, 6), Some(COLOR_PHOSPHOR_GREEN));
 }
