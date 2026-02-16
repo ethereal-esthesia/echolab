@@ -138,6 +138,10 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 2. Introduce memory bus abstraction.
 3. Add deterministic trace-based tests.
 
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.
+
 ## Memory Map Target
 
 ### Address Space
