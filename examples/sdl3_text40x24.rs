@@ -188,10 +188,7 @@ mod app {
             }
 
             let mut ram = [b' '; 65536];
-            let msg = b"HELLO WORLD FROM SDL3";
-            for (idx, b) in msg.iter().enumerate() {
-                ram[0x0400 + idx] = *b;
-            }
+            fill_text_page_ascii_sequence(&mut ram, 0x0400);
 
             let video = TextVideoController::default();
             let mut frame = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
@@ -247,6 +244,13 @@ mod app {
         }
 
         Ok(())
+    }
+
+    fn fill_text_page_ascii_sequence(ram: &mut [u8; 65536], text_base: usize) {
+        let text_cells = 40 * 24;
+        for i in 0..text_cells {
+            ram[text_base + i] = (i % 128) as u8;
+        }
     }
 }
 
