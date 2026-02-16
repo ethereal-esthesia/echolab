@@ -249,16 +249,15 @@ mod app {
     fn fill_text_page_demo_layout(ram: &mut [u8; 65536], text_base: usize) {
         const COLS: usize = 40;
         const ROWS: usize = 24;
-        const SPACE_NORMAL: u8 = b' ' | 0x80;
         const HELLO: &[u8] = b"HELLO WORLD";
 
         for i in 0..(COLS * ROWS) {
-            ram[text_base + i] = SPACE_NORMAL;
+            ram[text_base + i] = encode_normal_ascii(b' ');
         }
 
         for row in [0usize, 1usize] {
             for (i, ch) in HELLO.iter().enumerate() {
-                ram[text_base + row * COLS + i] = *ch | 0x80;
+                ram[text_base + row * COLS + i] = encode_normal_ascii(*ch);
             }
         }
 
@@ -270,6 +269,10 @@ mod app {
                 ram[text_base + row * COLS + col] = code as u8;
             }
         }
+    }
+
+    fn encode_normal_ascii(ch: u8) -> u8 {
+        ch.wrapping_add(32)
     }
 }
 
