@@ -12,8 +12,7 @@ pub const FRAME_HEIGHT: usize = TEXT_ROWS * CELL_HEIGHT;
 pub const COLOR_BLACK: u32 = 0xff00_0000;
 pub const COLOR_PHOSPHOR_GREEN: u32 = 0xff33_ff66;
 
-const TEXT_DISPLAY_ROM: &[u8; 6144] =
-    include_bytes!("../../assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin");
+const TEXT_DISPLAY_ROM: &[u8; 6144] = include_bytes!("../../assets/roms/retro_7x8_mono.bin");
 const TEXT_DISPLAY_BANK_SIZE: usize = 2048;
 const NORMAL_BANK_OFFSET: usize = 0;
 const NON_INVERSE_GLYPH_OFFSET: usize = 128 * GLYPH_HEIGHT;

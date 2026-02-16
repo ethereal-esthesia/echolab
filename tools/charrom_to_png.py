@@ -49,7 +49,7 @@ def write_ppm(path: pathlib.Path, pix: bytes, w: int, h: int) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Export Apple IIe text glyph ROM slice to editable PNG")
-    ap.add_argument("--rom", required=True, help="Input ROM binary (e.g. APPLE2E_TEXT_DISPLAY_ROUNDED.bin)")
+    ap.add_argument("--rom", required=True, help="Input ROM binary (e.g. retro_7x8_mono.bin)")
     ap.add_argument("--out", required=True, help="Output image path (.png or .ppm)")
     ap.add_argument("--bank", type=int, default=0, choices=[0, 1, 2], help="ROM bank (0=normal,1=flash,2=mouse)")
     ap.add_argument("--start-code", type=int, default=128, help="Starting glyph code in bank (default 128 for active 0-127 set)")

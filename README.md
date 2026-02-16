@@ -67,8 +67,8 @@ Export the active glyph set (codes 0-127) to an editable PNG:
 
 ```bash
 python3 tools/charrom_to_png.py \
-  --rom assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin \
-  --out assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED_EDIT.png \
+  --rom assets/roms/retro_7x8_mono.bin \
+  --out assets/roms/retro_7x8_mono_edit.png \
   --bank 0 \
   --start-code 128 \
   --scale 8
@@ -78,9 +78,9 @@ After editing that PNG, import it back into the ROM:
 
 ```bash
 python3 tools/png_to_charrom.py \
-  --in assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED_EDIT.png \
-  --rom-in assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin \
-  --rom-out assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin \
+  --in assets/roms/retro_7x8_mono_edit.png \
+  --rom-in assets/roms/retro_7x8_mono.bin \
+  --rom-out assets/roms/retro_7x8_mono.bin \
   --bank 0 \
   --start-code 128
 ```
