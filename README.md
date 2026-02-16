@@ -61,6 +61,30 @@ You can override config path:
 cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.toml --screenshot
 ```
 
+## Edit Text ROM Glyphs
+
+Export the active glyph set (codes 0-127) to an editable PNG:
+
+```bash
+python3 tools/charrom_to_png.py \
+  --rom assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin \
+  --out assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED_EDIT.png \
+  --bank 0 \
+  --start-code 128 \
+  --scale 8
+```
+
+After editing that PNG, import it back into the ROM:
+
+```bash
+python3 tools/png_to_charrom.py \
+  --in assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED_EDIT.png \
+  --rom-in assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin \
+  --rom-out assets/roms/APPLE2E_TEXT_DISPLAY_ROUNDED.bin \
+  --bank 0 \
+  --start-code 128
+```
+
 ## Scripts
 
 - `./install.sh [--force]`: install toolchain and platform dependencies.
@@ -91,6 +115,8 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `echolab.toml`: default app config values (screenshot directory, auto-exit)
+- `tools/charrom_to_png.py`: export ROM glyphs to editable PNG
+- `tools/png_to_charrom.py`: import edited PNG back into ROM bytes
 - `archive/`: imported legacy projects kept for reference
 
 ## Near-Term Plan
