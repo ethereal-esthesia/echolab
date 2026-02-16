@@ -119,8 +119,10 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `src/video/mod.rs`: text-only video controller that renders RAM into `ScreenBuffer`
 - `tests/capture.rs`: reusable capture option/capture behavior tests
 - `tests/config.rs`: parser tests for config behavior
+- `tests/postfx.rs`: persistence blend behavior and weighted-mix property tests
 - `tests/rng_determinism.rs`: integration tests for RNG behavior
 - `tests/screen_buffer.rs`: integration tests for display buffer behavior
+- `tests/timing.rs`: long-horizon crossover cadence/timing tests
 - `tests/text_video.rs`: integration tests for text scanout behavior
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
