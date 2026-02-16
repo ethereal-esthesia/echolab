@@ -34,7 +34,7 @@ For frame-flip stress testing, add `-- --flip-test` to randomize all 40x24 chars
 For black/white flip testing, add `-- --bw-flip-test` (full-frame toggle every frame, through persistence blend).
 Add `-- --fullscreen` to start the SDL window in fullscreen.
 Default sync is crossover timing: host display refresh (autodetected from SDL mode; measured from VSync presents if unavailable) with Apple IIe NTSC guest pacing (`59.92Hz`).
-Default presentation also applies phosphor persistence (previous frame bleeds into next each refresh).
+Default presentation also applies phosphor persistence using normalized blending (`current + previous = 100%` each frame).
 Add `-- --crossover-vsync-off` to keep crossover timing but disable renderer VSync (`--crossfade-vsync-off` is kept as an alias).
 Add `-- --vsync-off` for raw uncoupled timing.
 

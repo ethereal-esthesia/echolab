@@ -8,11 +8,11 @@ fn persistence_blend_matches_expected_integer_decay_sequence() {
     // Frame 0: current pixel is fully on.
     let current_on = [0xffff_ffffu32; 1];
     blend.apply(&current_on, &mut displayed);
-    assert_eq!(displayed[0] & 0xff, 255);
+    assert_eq!(displayed[0] & 0xff, 59);
 
     // Frames 1..: current pixel is off and only persistence remains.
     let current_off = [0xff00_0000u32; 1];
-    let expected_channel_values = [195u32, 149, 114, 87, 66, 50, 38, 29, 22, 16, 12, 9];
+    let expected_channel_values = [45u32, 34, 26, 19, 14, 10, 7, 5, 3, 2, 1, 0];
 
     for expected in expected_channel_values {
         blend.apply(&current_off, &mut displayed);

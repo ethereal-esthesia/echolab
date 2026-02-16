@@ -9,8 +9,10 @@ fn main() {
     let current_off = [0xff00_0000u32; 1];
 
     println!(
-        "Persistence table (bleed_num={}, frames={})",
+        "Persistence table (bleed_num={}, current_weight={}, previous_weight={}, frames={})",
         blend.bleed_num(),
+        blend.current_weight_num(),
+        blend.previous_weight_num(),
         frames
     );
     println!("frame,current_rgb,result_rgb,result_percent");
