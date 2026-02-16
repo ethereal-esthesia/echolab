@@ -40,3 +40,33 @@ fn persistence_blend_matches_expected_integer_decay_sequence() {
         assert_eq!(b, expected);
     }
 }
+
+#[test]
+fn persistence_blend_matches_formula_for_thousands_of_values() {
+    // Deterministic LCG so test coverage is broad but reproducible.
+    let mut state: u64 = 0xC0DE_F00D_1234_5678;
+    for _ in 0..4096 {
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let bleed_num = ((state >> 32) as u16) % 512; // includes >256 to test clamp behavior
+        let current = ((state >> 16) & 0xff) as u32;
+        let previous = ((state >> 8) & 0xff) as u32;
+
+        let blend = PersistenceBlend::new(bleed_num);
+        let cur_w = blend.current_weight_num() as u32;
+        let prev_w = blend.previous_weight_num() as u32;
+        assert_eq!(cur_w + prev_w, 256);
+
+        let expected = (current * cur_w + previous * prev_w) / 256;
+
+        let mut displayed = [0xff00_0000 | (previous << 16) | (previous << 8) | previous; 1];
+        let current_px = [0xff00_0000 | (current << 16) | (current << 8) | current; 1];
+        blend.apply(&current_px, &mut displayed);
+
+        let r = (displayed[0] >> 16) & 0xff;
+        let g = (displayed[0] >> 8) & 0xff;
+        let b = displayed[0] & 0xff;
+        assert_eq!(r, expected);
+        assert_eq!(g, expected);
+        assert_eq!(b, expected);
+    }
+}
