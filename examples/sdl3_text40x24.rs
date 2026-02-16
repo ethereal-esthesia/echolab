@@ -265,10 +265,8 @@ mod app {
             ram[text_base + i] = b' ';
         }
 
-        for row in [0usize, 1usize] {
-            for (i, ch) in HELLO.iter().enumerate() {
-                ram[text_base + row * COLS + i] = *ch;
-            }
+        for (i, ch) in HELLO.iter().enumerate() {
+            ram[text_base + i] = *ch;
         }
 
         for code in 0u16..=255u16 {
