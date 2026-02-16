@@ -4,12 +4,12 @@ use echo_lab::video::{
 };
 
 fn main() {
-    let mut ram = [b' '; 65536];
+    let mut ram = [0xa0; 65536];
     let message = b"HELLO WORLD";
     let base = 0x0400usize;
 
     for (i, ch) in message.iter().enumerate() {
-        ram[base + i] = *ch;
+        ram[base + i] = *ch | 0x80;
     }
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);

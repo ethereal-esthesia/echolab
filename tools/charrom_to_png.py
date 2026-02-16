@@ -8,11 +8,11 @@ import struct
 GLYPH_W = 7
 GLYPH_H = 8
 COLS = 16
-ROWS = 8
-COUNT = COLS * ROWS  # 128
+ROWS = 16
+COUNT = COLS * ROWS  # 256
 
 
-def render_bitmap(rom: bytes, bank: int, start_code: int, scale: int) -> tuple[bytes, int, int]:
+def render_bitmap(rom: bytes, bank: int, scale: int) -> tuple[bytes, int, int]:
     bank_off = bank * 2048
     base_w = COLS * GLYPH_W
     base_h = ROWS * GLYPH_H
@@ -22,8 +22,7 @@ def render_bitmap(rom: bytes, bank: int, start_code: int, scale: int) -> tuple[b
     pix = bytearray(w * h * 3)
 
     for code in range(COUNT):
-        src_code = start_code + code
-        glyph_off = bank_off + src_code * GLYPH_H
+        glyph_off = bank_off + code * GLYPH_H
         gx = (code % COLS) * GLYPH_W
         gy = (code // COLS) * GLYPH_H
 
@@ -76,7 +75,6 @@ def main() -> int:
     ap.add_argument("--rom", required=True, help="Input ROM binary (e.g. retro_7x8_mono.bin)")
     ap.add_argument("--out", required=True, help="Output image path (.bmp, .png, or .ppm)")
     ap.add_argument("--bank", type=int, default=0, choices=[0, 1, 2], help="ROM bank (0=normal,1=flash,2=mouse)")
-    ap.add_argument("--start-code", type=int, default=128, help="Starting glyph code in bank (default 128 for active 0-127 set)")
     ap.add_argument("--scale", type=int, default=1, help="Pixel scale factor for editing (1 = 1:1)")
     args = ap.parse_args()
 
@@ -86,12 +84,10 @@ def main() -> int:
 
     if len(rom) < 6144:
         raise SystemExit(f"ROM too small ({len(rom)} bytes), expected at least 6144")
-    if args.start_code < 0 or args.start_code + COUNT > 256:
-        raise SystemExit("start-code must satisfy start_code..start_code+127 within 0..255")
     if args.scale < 1:
         raise SystemExit("scale must be >= 1")
 
-    pix, w, h = render_bitmap(rom, args.bank, args.start_code, args.scale)
+    pix, w, h = render_bitmap(rom, args.bank, args.scale)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     if out_path.suffix.lower() == ".bmp":

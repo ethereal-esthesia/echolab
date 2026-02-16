@@ -8,7 +8,7 @@ Echo Lab is a Rust workspace for emulator experiments.
 - One machine descriptor: Apple IIe
 - Deterministic fast RNG module for emulator workloads
 - Testable screen buffer with explicit frame publish counter
-- Text-mode video scanout (RAM -> phosphor-green-on-black buffer with every-other-scanline output, using rounded Apple IIe glyph ROM data for codes 0-127)
+- Text-mode video scanout (RAM -> phosphor-green-on-black buffer with every-other-scanline output, using rounded Apple IIe glyph ROM data with unique codes 0-255)
 
 ## Run
 
@@ -63,14 +63,13 @@ cargo run --example sdl3_text40x24 --features sdl3 -- --config /path/to/echolab.
 
 ## Edit Text ROM Glyphs
 
-Export the active glyph set (codes 0-127) to an editable 1:1 BMP:
+Export the full glyph set (codes 0-255) to an editable 1:1 BMP:
 
 ```bash
 python3 tools/charrom_to_png.py \
   --rom assets/roms/retro_7x8_mono.bin \
   --out assets/roms/retro_7x8_mono_edit.bmp \
-  --bank 0 \
-  --start-code 128
+  --bank 0
 ```
 
 After editing that BMP, import it back into the ROM:
@@ -80,8 +79,7 @@ python3 tools/png_to_charrom.py \
   --in assets/roms/retro_7x8_mono_edit.bmp \
   --rom-in assets/roms/retro_7x8_mono.bin \
   --rom-out assets/roms/retro_7x8_mono.bin \
-  --bank 0 \
-  --start-code 128
+  --bank 0
 ```
 
 Import is strict black/white by default and fails if any pixel is not pure `#000000` or `#FFFFFF`.

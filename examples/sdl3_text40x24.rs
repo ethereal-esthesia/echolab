@@ -249,7 +249,7 @@ mod app {
     fn fill_text_page_ascii_sequence(ram: &mut [u8; 65536], text_base: usize) {
         let text_cells = 40 * 24;
         for i in 0..text_cells {
-            ram[text_base + i] = (i % 128) as u8;
+            ram[text_base + i] = (i % 256) as u8;
         }
     }
 }

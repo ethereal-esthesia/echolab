@@ -8,8 +8,8 @@ import struct
 GLYPH_W = 7
 GLYPH_H = 8
 COLS = 16
-ROWS = 8
-COUNT = COLS * ROWS  # 128
+ROWS = 16
+COUNT = COLS * ROWS  # 256
 
 
 def read_bmp_24(path: pathlib.Path) -> tuple[int, int, bytes]:
@@ -89,7 +89,6 @@ def main() -> int:
     ap.add_argument("--rom-in", required=True, help="Source ROM file to patch")
     ap.add_argument("--rom-out", required=True, help="Destination ROM file")
     ap.add_argument("--bank", type=int, default=0, choices=[0, 1, 2], help="ROM bank (0=normal,1=flash,2=mouse)")
-    ap.add_argument("--start-code", type=int, default=128, help="Starting glyph code in bank to patch")
     ap.add_argument(
         "--no-strict-bw",
         action="store_true",
@@ -100,9 +99,6 @@ def main() -> int:
     in_image = pathlib.Path(args.in_image)
     rom_in = pathlib.Path(args.rom_in)
     rom_out = pathlib.Path(args.rom_out)
-
-    if args.start_code < 0 or args.start_code + COUNT > 256:
-        raise SystemExit("start-code must satisfy start_code..start_code+127 within 0..255")
 
     with tempfile.TemporaryDirectory() as td:
         bmp_path = pathlib.Path(td) / "sheet.bmp"
@@ -136,8 +132,7 @@ def main() -> int:
     bank_off = args.bank * 2048
 
     for code in range(COUNT):
-        dst_code = args.start_code + code
-        glyph_off = bank_off + dst_code * GLYPH_H
+        glyph_off = bank_off + code * GLYPH_H
         gx = (code % COLS) * GLYPH_W
         gy = (code // COLS) * GLYPH_H
 

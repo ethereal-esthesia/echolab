@@ -6,7 +6,7 @@ use echo_lab::video::{
 #[test]
 fn text_video_renders_non_space_cells_on_even_scanlines_only() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'A';
+    ram[0x0400] = b'A' | 0x80;
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -27,7 +27,7 @@ fn text_video_renders_non_space_cells_on_even_scanlines_only() {
 #[test]
 fn text_video_keeps_space_cells_black_even_on_active_scanlines() {
     let mut ram = [0u8; 65536];
-    ram[0x0401] = b' ';
+    ram[0x0401] = b' ' | 0x80;
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -53,7 +53,7 @@ fn render_frame_publishes_new_frame() {
 #[test]
 fn text_video_uses_correct_left_to_right_glyph_bit_order() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'F';
+    ram[0x0400] = b'F' | 0x80;
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -68,7 +68,7 @@ fn text_video_uses_correct_left_to_right_glyph_bit_order() {
 #[test]
 fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'H';
+    ram[0x0400] = b'H' | 0x80;
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -83,8 +83,8 @@ fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
 #[test]
 fn text_video_d_has_hard_left_edge_and_differs_from_o() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'D';
-    ram[0x0401] = b'O';
+    ram[0x0400] = b'D' | 0x80;
+    ram[0x0401] = b'O' | 0x80;
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();

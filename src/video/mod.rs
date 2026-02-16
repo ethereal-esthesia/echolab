@@ -15,7 +15,6 @@ pub const COLOR_PHOSPHOR_GREEN: u32 = 0xff33_ff66;
 const TEXT_DISPLAY_ROM: &[u8; 6144] = include_bytes!("../../assets/roms/retro_7x8_mono.bin");
 const TEXT_DISPLAY_BANK_SIZE: usize = 2048;
 const NORMAL_BANK_OFFSET: usize = 0;
-const NON_INVERSE_GLYPH_OFFSET: usize = 128 * GLYPH_HEIGHT;
 
 pub struct TextVideoController {
     text_base: u16,
@@ -55,8 +54,8 @@ impl TextVideoController {
     fn render_cell(&self, ch: u8, col: usize, row: usize, out: &mut ScreenBuffer) {
         let x0 = col * CELL_WIDTH;
         let y0 = row * CELL_HEIGHT;
-        let code = (ch & 0x7f) as usize;
-        let glyph_base = NORMAL_BANK_OFFSET + NON_INVERSE_GLYPH_OFFSET + code * GLYPH_HEIGHT;
+        let code = ch as usize;
+        let glyph_base = NORMAL_BANK_OFFSET + code * GLYPH_HEIGHT;
 
         debug_assert!(glyph_base + GLYPH_HEIGHT <= TEXT_DISPLAY_BANK_SIZE);
 
