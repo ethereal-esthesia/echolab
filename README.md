@@ -84,6 +84,9 @@ python3 tools/png_to_charrom.py \
   --start-code 128
 ```
 
+Import is strict black/white by default and fails if any pixel is not pure `#000000` or `#FFFFFF`.
+Use `--no-strict-bw` only when you intentionally want thresholded conversion.
+
 ## Scripts
 
 - `./install.sh [--force]`: install toolchain and platform dependencies.

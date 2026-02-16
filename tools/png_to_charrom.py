@@ -62,6 +62,27 @@ def pixel_on(pix: bytes, w: int, x: int, y: int) -> bool:
     return pix[i] >= 128 or pix[i + 1] >= 128 or pix[i + 2] >= 128
 
 
+def validate_strict_bw(pix: bytes, w: int, h: int) -> None:
+    invalid = 0
+    first = None
+    for y in range(h):
+        for x in range(w):
+            i = (y * w + x) * 3
+            rgb = (pix[i], pix[i + 1], pix[i + 2])
+            if rgb != (0, 0, 0) and rgb != (255, 255, 255):
+                invalid += 1
+                if first is None:
+                    first = (x, y, rgb)
+
+    if invalid:
+        x, y, rgb = first
+        raise SystemExit(
+            "strict-bw check failed: image contains non-binary pixels "
+            f"(found {invalid}; first at x={x}, y={y}, rgb={rgb}). "
+            "Use pure black/white pixels or pass --no-strict-bw."
+        )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Import edited BMP/PNG/PPM glyph sheet into Apple IIe text ROM slice")
     ap.add_argument("--in", dest="in_image", required=True, help="Input edited image (.bmp, .png, or .ppm)")
@@ -69,6 +90,11 @@ def main() -> int:
     ap.add_argument("--rom-out", required=True, help="Destination ROM file")
     ap.add_argument("--bank", type=int, default=0, choices=[0, 1, 2], help="ROM bank (0=normal,1=flash,2=mouse)")
     ap.add_argument("--start-code", type=int, default=128, help="Starting glyph code in bank to patch")
+    ap.add_argument(
+        "--no-strict-bw",
+        action="store_true",
+        help="Allow non-binary input pixels (default is strict black/white validation)",
+    )
     args = ap.parse_args()
 
     in_image = pathlib.Path(args.in_image)
@@ -99,6 +125,9 @@ def main() -> int:
     if sx != sy:
         raise SystemExit("Non-uniform scale is not supported")
     scale = sx
+
+    if not args.no_strict_bw:
+        validate_strict_bw(pix, w, h)
 
     rom = bytearray(rom_in.read_bytes())
     if len(rom) < 6144:
