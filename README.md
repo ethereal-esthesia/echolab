@@ -104,6 +104,22 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
 
+## Secret Scanning
+
+Enable local pre-commit secret scanning:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Install gitleaks locally (example on macOS):
+
+```bash
+brew install gitleaks
+```
+
+CI secret scanning also runs on push and pull requests via GitHub Actions (`.github/workflows/secret-scan.yml`).
+
 ## Project Layout
 
 - `src/lib.rs`: library modules exported for app + tests

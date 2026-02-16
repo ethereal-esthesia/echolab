@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is required to scan staged changes for secrets."
+  echo "Install it (example: brew install gitleaks), then retry commit."
+  exit 1
+fi
+
+echo "pre-commit: running gitleaks on staged changes..."
+gitleaks protect --staged --redact
