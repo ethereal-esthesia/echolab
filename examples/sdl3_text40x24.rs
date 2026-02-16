@@ -22,6 +22,20 @@ mod app {
     struct SDL_Renderer(c_void);
     #[repr(C)]
     struct SDL_Texture(c_void);
+    type SdlDisplayId = u32;
+
+    #[repr(C)]
+    struct SDL_DisplayMode {
+        display_id: SdlDisplayId,
+        format: u32,
+        w: c_int,
+        h: c_int,
+        pixel_density: f32,
+        refresh_rate: f32,
+        refresh_rate_numerator: c_int,
+        refresh_rate_denominator: c_int,
+        internal: *mut c_void,
+    }
 
     #[repr(C)]
     struct SDL_Event {
@@ -41,6 +55,9 @@ mod app {
             height: c_int,
             flags: u64,
         ) -> *mut SDL_Window;
+        fn SDL_GetDisplayForWindow(window: *mut SDL_Window) -> SdlDisplayId;
+        fn SDL_GetCurrentDisplayMode(display_id: SdlDisplayId) -> *const SDL_DisplayMode;
+        fn SDL_GetDesktopDisplayMode(display_id: SdlDisplayId) -> *const SDL_DisplayMode;
         fn SDL_DestroyWindow(window: *mut SDL_Window);
         fn SDL_SetWindowFullscreen(window: *mut SDL_Window, fullscreen: bool) -> bool;
 
@@ -83,7 +100,7 @@ mod app {
     const SDL_PIXELFORMAT_ARGB8888: u32 = 372_645_892;
     const SDL_EVENT_QUIT: u32 = 0x100;
     const APPLE2E_NTSC_FPS: f64 = 59.92;
-    const HOST_DISPLAY_FPS: f64 = 60.0;
+    const HOST_DISPLAY_FPS_FALLBACK: f64 = 60.0;
     const PREV_FRAME_BLEED_NUM: u16 = 196; // ~76.6% previous-frame persistence
 
     fn sdl_error() -> String {
@@ -260,10 +277,13 @@ mod app {
             blended_frame.clear(COLOR_BLACK);
             let mut rng = FastRng::new(0x4543_484f_4c41_42u64);
             let start = Instant::now();
-            let host_frame_period = Duration::from_secs_f64(1.0 / HOST_DISPLAY_FPS);
-            let guest_frames_per_host = APPLE2E_NTSC_FPS / HOST_DISPLAY_FPS;
+            let (host_display_fps, mode_fps_known) =
+                query_host_display_fps(window).unwrap_or((HOST_DISPLAY_FPS_FALLBACK, false));
+            let mut host_frame_period_secs = 1.0 / host_display_fps;
+            let mut guest_frames_per_host = APPLE2E_NTSC_FPS * host_frame_period_secs;
             let mut next_host_deadline = Instant::now();
             let mut guest_step_accumulator = 1.0f64;
+            let mut last_present_instant: Option<Instant> = None;
 
             'running: loop {
                 let mut event = SDL_Event {
@@ -309,11 +329,26 @@ mod app {
                     break 'running;
                 }
                 SDL_RenderPresent(renderer);
+                let presented_at = Instant::now();
+                if use_crossover_sync && !crossover_vsync_off && !mode_fps_known {
+                    if let Some(prev) = last_present_instant {
+                        let dt = presented_at.duration_since(prev).as_secs_f64();
+                        if dt > (1.0 / 240.0) && dt < (1.0 / 20.0) {
+                            // Exponential smoothing on present intervals for stable fallback.
+                            host_frame_period_secs = host_frame_period_secs * 0.9 + dt * 0.1;
+                            guest_frames_per_host = APPLE2E_NTSC_FPS * host_frame_period_secs;
+                        }
+                    }
+                    last_present_instant = Some(presented_at);
+                }
                 if start.elapsed() >= Duration::from_secs(cfg.sdl3_text40x24.auto_exit_seconds) {
                     break 'running;
                 }
                 if use_crossover_sync && crossover_vsync_off {
-                    pace_to_next_frame(&mut next_host_deadline, host_frame_period);
+                    pace_to_next_frame(
+                        &mut next_host_deadline,
+                        Duration::from_secs_f64(host_frame_period_secs),
+                    );
                 } else if options.vsync_off {
                     SDL_Delay(16);
                 }
@@ -410,6 +445,42 @@ mod app {
         let g = ag.max(bg);
         let bl = ab.max(bb);
         0xff00_0000 | (r << 16) | (g << 8) | bl
+    }
+
+    fn query_host_display_fps(window: *mut SDL_Window) -> Option<(f64, bool)> {
+        // SAFETY: Called after SDL video init with a valid window pointer.
+        unsafe {
+            let display_id = SDL_GetDisplayForWindow(window);
+            if display_id == 0 {
+                return None;
+            }
+
+            let mode = {
+                let current = SDL_GetCurrentDisplayMode(display_id);
+                if current.is_null() {
+                    SDL_GetDesktopDisplayMode(display_id)
+                } else {
+                    current
+                }
+            };
+            if mode.is_null() {
+                return None;
+            }
+
+            let m = &*mode;
+            if m.refresh_rate_numerator > 0 && m.refresh_rate_denominator > 0 {
+                let fps = (m.refresh_rate_numerator as f64) / (m.refresh_rate_denominator as f64);
+                if fps.is_finite() && fps > 1.0 {
+                    return Some((fps, true));
+                }
+            }
+            let fps = m.refresh_rate as f64;
+            if fps.is_finite() && fps > 1.0 {
+                return Some((fps, true));
+            }
+
+            None
+        }
     }
 }
 
