@@ -8,7 +8,7 @@ Echo Lab is a Rust workspace for emulator experiments.
 - One machine descriptor: Apple IIe
 - Deterministic fast RNG module for emulator workloads
 - Testable screen buffer with explicit frame publish counter
-- Text-mode video scanout (RAM -> black/white screen buffer with every-other-scanline output)
+- Text-mode video scanout (RAM -> phosphor-green-on-black buffer with every-other-scanline output)
 
 ## Run
 

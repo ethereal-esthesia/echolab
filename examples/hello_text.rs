@@ -1,6 +1,6 @@
 use echo_lab::screen_buffer::ScreenBuffer;
 use echo_lab::video::{
-    CELL_WIDTH, COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TEXT_COLS, TextVideoController,
+    CELL_WIDTH, COLOR_PHOSPHOR_GREEN, FRAME_HEIGHT, FRAME_WIDTH, TEXT_COLS, TextVideoController,
 };
 
 fn main() {
@@ -26,7 +26,7 @@ fn main() {
     let mut row_preview = String::with_capacity(TEXT_COLS);
     for col in 0..TEXT_COLS {
         let px = col * CELL_WIDTH;
-        let on = out.get_pixel(px, 0) == Some(COLOR_WHITE);
+        let on = out.get_pixel(px, 0) == Some(COLOR_PHOSPHOR_GREEN);
         row_preview.push(if on { '#' } else { '.' });
     }
 

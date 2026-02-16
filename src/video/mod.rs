@@ -8,7 +8,7 @@ pub const FRAME_WIDTH: usize = TEXT_COLS * CELL_WIDTH;
 pub const FRAME_HEIGHT: usize = TEXT_ROWS * CELL_HEIGHT;
 
 pub const COLOR_BLACK: u32 = 0xff00_0000;
-pub const COLOR_WHITE: u32 = 0xffff_ffff;
+pub const COLOR_PHOSPHOR_GREEN: u32 = 0xff33_ff66;
 
 pub struct TextVideoController {
     text_base: u16,
@@ -53,7 +53,7 @@ impl TextVideoController {
             // "Every-other-scanline" model: odd scanlines are black.
             let active_scanline = y % 2 == 0;
             let color = if active_scanline && ch != b' ' {
-                COLOR_WHITE
+                COLOR_PHOSPHOR_GREEN
             } else {
                 COLOR_BLACK
             };

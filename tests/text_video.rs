@@ -1,5 +1,7 @@
 use echo_lab::screen_buffer::ScreenBuffer;
-use echo_lab::video::{COLOR_BLACK, COLOR_WHITE, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController};
+use echo_lab::video::{
+    COLOR_BLACK, COLOR_PHOSPHOR_GREEN, FRAME_HEIGHT, FRAME_WIDTH, TextVideoController,
+};
 
 #[test]
 fn text_video_renders_non_space_cells_on_even_scanlines_only() {
@@ -11,7 +13,7 @@ fn text_video_renders_non_space_cells_on_even_scanlines_only() {
     video.render_frame(&ram, &mut out);
 
     for x in 0..7 {
-        assert_eq!(out.get_pixel(x, 0), Some(COLOR_WHITE));
+        assert_eq!(out.get_pixel(x, 0), Some(COLOR_PHOSPHOR_GREEN));
         assert_eq!(out.get_pixel(x, 1), Some(COLOR_BLACK));
     }
 }
