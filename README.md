@@ -136,3 +136,31 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 1. Add CPU state and step execution scaffolding.
 2. Introduce memory bus abstraction.
 3. Add deterministic trace-based tests.
+
+## Memory Map Target
+
+### Address Space
+
+| Range | Purpose |
+|---|---|
+| `0x0000-0x00FF` | ZERO PAGE RAM |
+| `0x0100-0x01FF` | CPU STACK RAM |
+| `0x0200-0xBFFF` | RAM |
+| `0xC000-0xDFFF` | ROM |
+| `0xE000-0xE0FF` | MMIO |
+| `0xE100-0xFFFF` | monitor/firmware ROM + vectors (or flip MMIO/ROM order) |
+
+### MMIO Registers (`0xE000-0xE0FF`)
+
+| Offset | Name | Notes |
+|---|---|---|
+| `+0x00/+0x01` | `FRM_BASE_LO/HI` | `HI = 0x00` turns off display |
+| `+0x02/+0x03` | `VPT_BASE_LO/HI` | `HI = 0x00` turns off viewport |
+| `+0x04` | `VPT_COLS` | viewport width |
+| `+0x05` | `VPT_ROWS` | viewport height |
+| `+0x06` | `VPT_COL_OFFSET_BYTE` | viewport scroll column offset |
+| `+0x07` | `VPT_ROW_OFFSET_BYTE` | viewport row offset (256-byte boundary) |
+| `+0x08` | `VPT_X_OFFSET_PX` | `0x00-0x06` |
+| `+0x09` | `VPT_Y_OFFSET_PX` | `0x00-0x07` |
+| `+0x0A` | `VBL_SYNC_WRT` | write any value to request sync/commit |
+| `+0x0B` | `VBL_SYNC_RD` | bit0=`in_vblank`, bit1=`write_pending` |
