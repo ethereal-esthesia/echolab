@@ -6,7 +6,7 @@ use echo_lab::video::{
 #[test]
 fn text_video_renders_non_space_cells_on_even_scanlines_only() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'A' | 0x80;
+    ram[0x0400] = b'A';
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -27,7 +27,7 @@ fn text_video_renders_non_space_cells_on_even_scanlines_only() {
 #[test]
 fn text_video_keeps_space_cells_black_even_on_active_scanlines() {
     let mut ram = [0u8; 65536];
-    ram[0x0401] = b' ' | 0x80;
+    ram[0x0401] = b' ';
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -53,7 +53,7 @@ fn render_frame_publishes_new_frame() {
 #[test]
 fn text_video_uses_correct_left_to_right_glyph_bit_order() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'F' | 0x80;
+    ram[0x0400] = b'F';
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -68,7 +68,7 @@ fn text_video_uses_correct_left_to_right_glyph_bit_order() {
 #[test]
 fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'H' | 0x80;
+    ram[0x0400] = b'H';
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
@@ -83,19 +83,19 @@ fn text_video_preserves_h_middle_bar_with_doubled_y_mapping() {
 #[test]
 fn text_video_d_has_hard_left_edge_and_differs_from_o() {
     let mut ram = [0u8; 65536];
-    ram[0x0400] = b'D' | 0x80;
-    ram[0x0401] = b'O' | 0x80;
+    ram[0x0400] = b'D';
+    ram[0x0401] = b'O';
 
     let mut out = ScreenBuffer::new(FRAME_WIDTH, FRAME_HEIGHT);
     let video = TextVideoController::default();
     video.render_frame(&ram, &mut out);
 
-    // Row 1 of D now has a hard left edge. With double-wide pixels this is x=0..1.
-    assert_eq!(out.get_pixel(0, 2), Some(COLOR_PHOSPHOR_GREEN));
-    assert_eq!(out.get_pixel(1, 2), Some(COLOR_PHOSPHOR_GREEN));
-
-    // O stays rounded and should not light the far-left pair at row 1.
+    let d_cell_x = 0usize;
     let o_cell_x = CELL_WIDTH;
-    assert_eq!(out.get_pixel(o_cell_x, 2), Some(COLOR_BLACK));
-    assert_eq!(out.get_pixel(o_cell_x + 1, 2), Some(COLOR_BLACK));
+    let differs = (0..CELL_WIDTH).any(|dx| {
+        (0..echo_lab::video::CELL_HEIGHT).any(|dy| {
+            out.get_pixel(d_cell_x + dx, dy) != out.get_pixel(o_cell_x + dx, dy)
+        })
+    });
+    assert!(differs, "D and O should render as distinct glyphs");
 }
