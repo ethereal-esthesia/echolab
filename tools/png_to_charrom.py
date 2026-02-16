@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import pathlib
+import shutil
 import subprocess
 import tempfile
 import struct
@@ -30,14 +31,15 @@ def read_bmp_24(path: pathlib.Path) -> tuple[int, int, bytes]:
     bpp = struct.unpack_from("<H", data, 28)[0]
     compression = struct.unpack_from("<I", data, 30)[0]
 
-    if planes != 1 or bpp != 24 or compression != 0:
-        raise ValueError("Only uncompressed 24bpp BMP is supported")
+    if planes != 1 or compression != 0 or bpp not in (24, 32):
+        raise ValueError("Only uncompressed 24bpp/32bpp BMP is supported")
     if width <= 0 or height == 0:
         raise ValueError("Invalid BMP dimensions")
 
     w = width
     h = abs(height)
-    row_stride = ((w * 3 + 3) // 4) * 4
+    bytes_per_pixel = bpp // 8
+    row_stride = ((w * bytes_per_pixel + 3) // 4) * 4
     needed = pixel_off + row_stride * h
     if len(data) < needed:
         raise ValueError("BMP pixel data truncated")
@@ -48,9 +50,10 @@ def read_bmp_24(path: pathlib.Path) -> tuple[int, int, bytes]:
         src_y = (h - 1 - y) if bottom_up else y
         src_row = pixel_off + src_y * row_stride
         for x in range(w):
-            b = data[src_row + x * 3 + 0]
-            g = data[src_row + x * 3 + 1]
-            r = data[src_row + x * 3 + 2]
+            px = src_row + x * bytes_per_pixel
+            b = data[px + 0]
+            g = data[px + 1]
+            r = data[px + 2]
             i = (y * w + x) * 3
             out[i : i + 3] = bytes((r, g, b))
 
@@ -102,12 +105,16 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as td:
         bmp_path = pathlib.Path(td) / "sheet.bmp"
-        if in_image.suffix.lower() == ".bmp":
-            bmp_path.write_bytes(in_image.read_bytes())
-        else:
+        if shutil.which("sips") is not None:
             subprocess.run(
                 ["sips", "-s", "format", "bmp", str(in_image), "--out", str(bmp_path)],
                 check=True,
+            )
+        elif in_image.suffix.lower() == ".bmp":
+            bmp_path.write_bytes(in_image.read_bytes())
+        else:
+            raise SystemExit(
+                "sips not found; provide a BMP file directly or install an image conversion tool"
             )
 
         w, h, pix = read_bmp_24(bmp_path)
