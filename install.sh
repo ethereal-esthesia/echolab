@@ -79,7 +79,7 @@ install_build_deps_macos() {
 
   echo "Installing build dependencies with Homebrew..."
   brew update
-  brew install pkg-config cmake
+  brew install pkg-config cmake sdl3
 }
 
 install_build_deps_linux() {
