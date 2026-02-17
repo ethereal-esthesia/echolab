@@ -154,6 +154,27 @@ CI secret scanning also runs on push and pull requests via GitHub Actions (`.git
 2. Introduce memory bus abstraction.
 3. Add deterministic trace-based tests.
 
+## Hardware-Faithful Emulation Plan
+
+Goal: base emulation behavior on documented hardware timing and signal interactions, while keeping modules testable and incremental.
+
+Approach:
+- Model observable hardware behavior first (bus transactions, scan timing, soft-switch side effects), not transistor-level internals.
+- Implement each subsystem as a clocked state machine with explicit inputs/outputs per tick.
+- Encode hardware contracts in tests before deep optimization.
+
+Priority order:
+1. Bus and memory arbitration timing.
+2. Video scan timing and VBlank edge semantics.
+3. Keyboard and input strobe/read-clear behavior.
+4. Audio and timer/interrupt sequencing.
+5. Storage/card timing once core timing is stable.
+
+Validation strategy:
+- Compare against ROM routines and deterministic traces.
+- Add subsystem tests that assert cycle-level side effects at MMIO boundaries.
+- Keep one reference timing table per subsystem in docs and update it with implementation changes.
+
 ## License
 
 This project is licensed under the MIT License. See `LICENSE`.
