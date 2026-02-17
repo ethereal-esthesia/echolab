@@ -188,6 +188,40 @@ collect_candidate_files() {
   fi
 }
 
+file_size_bytes() {
+  local path="$1"
+  if stat -f %z "$path" >/dev/null 2>&1; then
+    stat -f %z "$path"
+  else
+    stat -c %s "$path"
+  fi
+}
+
+human_size() {
+  local bytes="$1"
+  local units=("B" "KB" "MB" "GB" "TB")
+  local idx=0
+  local value="$bytes"
+  while (( value >= 1024 && idx < ${#units[@]} - 1 )); do
+    value=$((value / 1024))
+    idx=$((idx + 1))
+  done
+  printf "%s %s" "$value" "${units[$idx]}"
+}
+
+print_scheduled_file() {
+  local rel="$1"
+  local abs="$SCRIPT_DIR/$rel"
+  if [[ ! -f "$abs" ]]; then
+    return
+  fi
+  local bytes
+  bytes="$(file_size_bytes "$abs")"
+  local human
+  human="$(human_size "$bytes")"
+  printf "  [%10s] %s\n" "$human" "$rel"
+}
+
 ensure_clean_git
 load_git_tracked_excludes
 detect_nested_git_repos
@@ -275,13 +309,13 @@ if [[ "$list_only" -eq 1 ]]; then
     while IFS= read -r f; do
       rel="${f#./}"
       should_exclude_file "$rel" && continue
-      echo "$rel"
+      print_scheduled_file "$rel"
     done < <(find . -type d \( -name .git -o -name target \) -prune -o -type f -print | sort)
   else
     for item in "${existing[@]}"; do
       while IFS= read -r f; do
         should_exclude_file "$f" && continue
-        echo "$f"
+        print_scheduled_file "$f"
       done < <(collect_candidate_files "$item" | sort)
     done
   fi

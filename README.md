@@ -130,7 +130,7 @@ Create a backup archive of non-code assets to Dropbox (auto-detected):
 ./backup_noncode.sh
 ```
 
-Show only the files scheduled for backup (no archive written):
+Show only the files scheduled for backup (no archive written, with per-file sizes):
 
 ```bash
 ./backup_noncode.sh --list-only
