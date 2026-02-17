@@ -135,7 +135,18 @@ discover_git_projects() {
     [[ -n "$repo_root" ]] && git_projects+=("$repo_root")
   done < <(
     find . -type d -name .git -prune \
-      | sed -e 's#^\./##' -e 's#/.git$##' -e 's#^$#.#' \
+      | awk '
+          {
+            d=$0
+            if (d=="./.git") {
+              print "."
+            } else {
+              sub(/^.\//, "", d)
+              sub(/\/.git$/, "", d)
+              print d
+            }
+          }
+        ' \
       | awk '{ print length, $0 }' \
       | sort -n -k1,1 -k2,2 \
       | awk '{ $1=""; sub(/^ /,""); print }'
@@ -198,6 +209,9 @@ collect_project_scan_roots() {
     done
   fi
 
+  if [[ "${#roots[@]}" -eq 0 ]]; then
+    return
+  fi
   printf "%s\n" "${roots[@]}" | awk 'NF' | sort -u
 }
 
