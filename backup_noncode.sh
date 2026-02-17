@@ -255,6 +255,49 @@ collect_project_files() {
   done < <(collect_project_scan_roots "$repo_root")
 }
 
+direct_child_repos() {
+  local repo_root="$1"
+  local candidate
+  local parent
+  local is_direct
+
+  for candidate in "${git_projects[@]}"; do
+    [[ "$candidate" == "$repo_root" ]] && continue
+    path_is_under "$candidate" "$repo_root" || continue
+
+    is_direct=1
+    for parent in "${git_projects[@]}"; do
+      [[ "$parent" == "$repo_root" || "$parent" == "$candidate" ]] && continue
+      if path_is_under "$candidate" "$parent" && path_is_under "$parent" "$repo_root"; then
+        is_direct=0
+        break
+      fi
+    done
+
+    if [[ "$is_direct" -eq 1 ]]; then
+      echo "$candidate"
+    fi
+  done | sort
+}
+
+crawl_project_recursive() {
+  local repo_root="$1"
+  local child
+  local rel
+  echo "Project run: $repo_root"
+
+  while IFS= read -r f; do
+    rel="${f#./}"
+    should_exclude_file "$rel" && continue
+    print_scheduled_file "$rel"
+  done < <(collect_project_files "$repo_root" | sort -u)
+
+  while IFS= read -r child; do
+    [[ -n "$child" ]] || continue
+    crawl_project_recursive "$child"
+  done < <(direct_child_repos "$repo_root")
+}
+
 should_exclude_file() {
   local rel="$1"
 
@@ -408,14 +451,7 @@ fi
 
 if [[ "$list_only" -eq 1 ]]; then
   echo "Scheduled files:"
-  for repo_root in "${git_projects[@]}"; do
-    echo "Project run: $repo_root"
-    while IFS= read -r f; do
-      rel="${f#./}"
-      should_exclude_file "$rel" && continue
-      print_scheduled_file "$rel"
-    done < <(collect_project_files "$repo_root" | sort -u)
-  done
+  crawl_project_recursive "."
   exit 0
 fi
 
