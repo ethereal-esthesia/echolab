@@ -103,8 +103,8 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
-- `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: backup to Dropbox (auto-detected) or custom destination; fails if git is not clean and excludes all git-tracked files.
-- `./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--config FILE]`: copy one file only if source is newer than last check.
+- `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
+- `./sync_to_dropbox.sh --source FILE [--dest PATH] [--name FILENAME] [--config FILE]`: upload one file via Dropbox API only if source is newer than last check.
 
 ## Secret Scanning
 
@@ -124,7 +124,7 @@ CI secret scanning also runs on push and pull requests via GitHub Actions (`.git
 
 ## Backup Non-Code Assets
 
-Create a backup archive of non-code assets to Dropbox (auto-detected):
+Create a backup archive of non-code assets locally:
 
 ```bash
 ./backup_noncode.sh
@@ -175,16 +175,16 @@ Use a custom config file:
 ./backup_noncode.sh --whole-project --zip-overwrite --config /path/to/dropbox.toml
 ```
 
-Sync one file to Dropbox only when it changed (newer mtime):
+Upload one file to Dropbox only when it changed (newer mtime):
 
 ```bash
 ./sync_to_dropbox.sh --source /path/to/echolab_latest.zip
 ```
 
-Use a custom destination folder:
+Use a custom Dropbox destination path:
 
 ```bash
-./sync_to_dropbox.sh --source /path/to/echolab_latest.zip --dest /path/to/dropbox/folder
+./sync_to_dropbox.sh --source /path/to/echolab_latest.zip --dest /echolab_sync
 ```
 
 Configure Dropbox sync defaults and token environment key in:
@@ -193,15 +193,15 @@ Configure Dropbox sync defaults and token environment key in:
 ./dropbox.toml
 ```
 
-`sync_folder_name` and `backup_folder_name` control the auto-detected Dropbox subfolder names when `default_sync_dir` / `default_backup_dir` are empty.
+`default_sync_dir` is a Dropbox API folder path (example: `/echolab_sync`) and `backup_folder_name` controls the default local backup subfolder name when `default_backup_dir` is empty.
 
 Example:
 
 ```toml
 token_env = "DROPBOX_ACCESS_TOKEN"
-default_sync_dir = "/path/to/dropbox/echolab_sync"
+default_sync_dir = "/echolab_sync"
 sync_folder_name = "echolab_sync"
-default_backup_dir = "/path/to/dropbox/echolab_backups"
+default_backup_dir = "/absolute/local/path/for/backups"
 backup_folder_name = "echolab_backups"
 
 [exclude]
@@ -234,7 +234,7 @@ keys = "*.key"
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `echolab.toml`: default app config values (screenshot directory, auto-exit)
-- `dropbox.toml`: Dropbox backup/sync config (token env key, optional default dirs, wildcard exclude list)
+- `dropbox.toml`: Dropbox sync + local backup config (token env key, optional defaults, wildcard exclude list)
 - `tools/charrom_export.py`: export ROM glyphs to editable BMP/PNG
 - `tools/charrom_import.py`: import edited BMP/PNG back into ROM bytes
 - `archive/`: imported legacy projects kept for reference

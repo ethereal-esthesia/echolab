@@ -6,17 +6,14 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--state FILE] [--config FILE] [--dry-run]
+Usage: ./sync_to_dropbox.sh --source FILE [--dest PATH] [--name FILENAME] [--state FILE] [--config FILE] [--dry-run]
 
-Copies FILE to Dropbox only when FILE is newer than the last recorded check.
+Uploads FILE to Dropbox API only when FILE is newer than the last recorded check.
 
 Options:
   --source FILE   Source file to sync (required).
-  --dest DIR      Destination directory.
-                  Default: auto-detect Dropbox:
-                    1) ~/Library/CloudStorage/Dropbox
-                    2) ~/Dropbox
-                  Then uses "<dropbox>/<sync_folder_name>" from config.
+  --dest PATH     Dropbox destination folder path (example: /echolab_sync).
+                  Defaults to "default_sync_dir" from config, else "/<sync_folder_name>".
   --name NAME     Output filename in destination (default: basename of source).
   --state FILE    State file path for last-check timestamp.
                   Default: .backup_state/dropbox_sync_<hash>.state
@@ -113,14 +110,7 @@ if [[ -f "$config_file" ]]; then
 fi
 
 if [[ -z "$dest_root" ]]; then
-  if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
-    dest_root="$HOME/Library/CloudStorage/Dropbox/$sync_folder_name"
-  elif [[ -d "$HOME/Dropbox" ]]; then
-    dest_root="$HOME/Dropbox/$sync_folder_name"
-  else
-    echo "error: Dropbox folder not found. Provide --dest DIR." >&2
-    exit 1
-  fi
+  dest_root="/$sync_folder_name"
 fi
 
 if [[ -z "$out_name" ]]; then
@@ -145,14 +135,26 @@ if [[ -f "$state_file" ]]; then
   [[ "$last_checked" =~ ^[0-9]+$ ]] || last_checked=0
 fi
 
-dest_file="$dest_root/$out_name"
+token_env_name="${token_env_name:-DROPBOX_ACCESS_TOKEN}"
+dropbox_token="${!token_env_name:-}"
+
+[[ "$dest_root" == /* ]] || dest_root="/$dest_root"
+dropbox_path="${dest_root%/}/$out_name"
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "error: curl is required for Dropbox API upload." >&2
+  exit 1
+fi
+
+if [[ -z "$dropbox_token" ]]; then
+  echo "error: Dropbox token env var is empty: $token_env_name" >&2
+  exit 1
+fi
 
 echo "Source: $source_abs"
-echo "Destination: $dest_file"
+echo "Dropbox destination: $dropbox_path"
 echo "State file: $state_file"
-if [[ -n "$token_env_name" ]]; then
-  echo "Token env key (from config): $token_env_name"
-fi
+echo "Token env key: $token_env_name"
 echo "Source mtime: $source_mtime"
 echo "Last checked mtime: $last_checked"
 
@@ -162,13 +164,17 @@ if (( source_mtime <= last_checked )); then
 fi
 
 if [[ "$dry_run" -eq 1 ]]; then
-  echo "Dry run: would copy source to destination and update state."
+  echo "Dry run: would upload source to Dropbox API and update state."
   exit 0
 fi
 
-mkdir -p "$dest_root"
 mkdir -p "$(dirname "$state_file")"
-cp -f "$source_file" "$dest_file"
+api_arg=$(printf '{"path":"%s","mode":"overwrite","autorename":false,"mute":true,"strict_conflict":false}' "$dropbox_path")
+curl -sS -X POST "https://content.dropboxapi.com/2/files/upload" \
+  --header "Authorization: Bearer $dropbox_token" \
+  --header "Dropbox-API-Arg: $api_arg" \
+  --header "Content-Type: application/octet-stream" \
+  --data-binary @"$source_file" >/dev/null
 printf "%s\n" "$source_mtime" > "$state_file"
 
-echo "Synced: $dest_file"
+echo "Uploaded: $dropbox_path"

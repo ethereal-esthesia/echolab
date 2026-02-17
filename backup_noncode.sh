@@ -13,10 +13,8 @@ Backups exclude all git-tracked files and require a clean git working tree.
 
 Options:
   --dest DIR          Backup destination directory.
-                      Default: auto-detect Dropbox:
-                        1) ~/Library/CloudStorage/Dropbox
-                        2) ~/Dropbox
-                      Then uses "<dropbox>/<backup_folder_name>" from config.
+                      Default: "default_backup_dir" from config,
+                      else "./.backups/<backup_folder_name>".
   --whole-project     Backup the whole project folder (excludes .git and target).
   --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
   --config FILE       Dropbox config file path (default: ./dropbox.toml).
@@ -362,14 +360,7 @@ if [[ -f "$config_file" ]]; then
 fi
 
 if [[ -z "$dest_root" ]]; then
-  if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
-    dest_root="$HOME/Library/CloudStorage/Dropbox/$backup_folder_name"
-  elif [[ -d "$HOME/Dropbox" ]]; then
-    dest_root="$HOME/Dropbox/$backup_folder_name"
-  else
-    echo "error: Dropbox folder not found. Provide --dest DIR." >&2
-    exit 1
-  fi
+  dest_root="$SCRIPT_DIR/.backups/$backup_folder_name"
 fi
 
 echo "Backup source: $SCRIPT_DIR"

@@ -2,13 +2,13 @@
 # Put your Dropbox API token in an environment variable, then reference its name here.
 token_env = "DROPBOX_ACCESS_TOKEN"
 
-# Optional default sync destination directory.
-# If empty or missing, scripts auto-detect Dropbox local folder.
+# Optional default Dropbox path for sync uploads (example: "/echolab_sync").
+# If empty or missing, scripts default to "/<sync_folder_name>".
 default_sync_dir = ""
 sync_folder_name = "echolab_sync"
 
 # Optional default backup destination directory.
-# If empty or missing, scripts auto-detect Dropbox local folder.
+# If empty or missing, scripts use "./.backups/<backup_folder_name>".
 default_backup_dir = ""
 backup_folder_name = "echolab_backups"
 
