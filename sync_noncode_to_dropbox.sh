@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'USAGE'
-Usage: ./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-dir DIR] [--dry-run]
+Usage: ./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-dir DIR] [--remote-compare] [--dry-run]
 
 Uploads scheduled non-code files individually to Dropbox API, preserving relative paths.
 Only uploads files newer than each file's last recorded sync timestamp.
@@ -16,6 +16,8 @@ Options:
   --config FILE     Config file path (default: ./dropbox.toml).
   --state-dir DIR   Per-file sync state directory.
                     Default: .backup_state/dropbox_sync_noncode
+  --remote-compare  Ignore local state timing and compare source mtime against
+                    Dropbox file timestamps (server_modified) for each file.
   --dry-run         Show what would upload without sending data.
   -h, --help        Show help.
 USAGE
@@ -25,6 +27,7 @@ dest_root=""
 config_file="$SCRIPT_DIR/dropbox.toml"
 state_dir="$SCRIPT_DIR/.backup_state/dropbox_sync_noncode"
 dry_run=0
+remote_compare=0
 sync_folder_name="echolab_sync"
 token_env_name="DROPBOX_ACCESS_TOKEN"
 
@@ -47,6 +50,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       dry_run=1
+      shift
+      ;;
+    --remote-compare)
+      remote_compare=1
       shift
       ;;
     -h|--help)
@@ -75,6 +82,48 @@ parse_toml_string() {
       exit
     }
   ' "$path"
+}
+
+iso_to_epoch() {
+  local iso="$1"
+  if [[ -z "$iso" ]]; then
+    echo 0
+    return 0
+  fi
+  if date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s >/dev/null 2>&1; then
+    date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s
+    return 0
+  fi
+  if date -u -d "$iso" +%s >/dev/null 2>&1; then
+    date -u -d "$iso" +%s
+    return 0
+  fi
+  echo 0
+}
+
+dropbox_remote_mtime_epoch() {
+  local dropbox_path="$1"
+  local resp
+  local api_arg
+  api_arg=$(printf '{"path":"%s","include_media_info":false,"include_deleted":false,"include_has_explicit_shared_members":false}' "$dropbox_path")
+  resp="$(curl -sS -X POST "https://api.dropboxapi.com/2/files/get_metadata" \
+    --header "Authorization: Bearer $dropbox_token" \
+    --header "Content-Type: application/json" \
+    --data "$api_arg")"
+
+  if printf "%s" "$resp" | grep -q '"error_summary"[[:space:]]*:[[:space:]]*"path/not_found/'; then
+    echo 0
+    return 0
+  fi
+
+  if printf "%s" "$resp" | grep -q '"error_summary"'; then
+    echo "error: metadata lookup failed for $dropbox_path: $resp" >&2
+    return 1
+  fi
+
+  local server_modified
+  server_modified="$(printf "%s" "$resp" | sed -n 's/.*"server_modified"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  iso_to_epoch "$server_modified"
 }
 
 if [[ -f "$config_file" ]]; then
@@ -125,6 +174,11 @@ fi
 echo "Dropbox destination root: $dest_root"
 echo "Token env key: $token_env_name"
 echo "State dir: $state_dir"
+if [[ "$remote_compare" -eq 1 ]]; then
+  echo "Compare mode: Dropbox timestamps (server_modified)"
+else
+  echo "Compare mode: local state mtimes"
+fi
 echo "Candidate files: ${#rel_files[@]}"
 
 uploaded=0
@@ -144,21 +198,34 @@ for rel in "${rel_files[@]}"; do
     source_mtime="$(stat -c %Y "$abs")"
   fi
 
-  source_key="$(printf "%s" "$rel" | shasum -a 1 | awk '{print $1}')"
-  state_file="$state_dir/${source_key}.state"
-
-  last_checked=0
-  if [[ -f "$state_file" ]]; then
-    read -r last_checked < "$state_file" || true
-    [[ "$last_checked" =~ ^[0-9]+$ ]] || last_checked=0
-  fi
-
-  if (( source_mtime <= last_checked )); then
-    skipped=$((skipped + 1))
-    continue
-  fi
-
   dropbox_path="${dest_root%/}/$rel"
+
+  if [[ "$remote_compare" -eq 1 ]]; then
+    remote_mtime=0
+    if ! remote_mtime="$(dropbox_remote_mtime_epoch "$dropbox_path")"; then
+      failed=$((failed + 1))
+      continue
+    fi
+    if (( remote_mtime > 0 && source_mtime <= remote_mtime )); then
+      skipped=$((skipped + 1))
+      continue
+    fi
+  else
+    source_key="$(printf "%s" "$rel" | shasum -a 1 | awk '{print $1}')"
+    state_file="$state_dir/${source_key}.state"
+
+    last_checked=0
+    if [[ -f "$state_file" ]]; then
+      read -r last_checked < "$state_file" || true
+      [[ "$last_checked" =~ ^[0-9]+$ ]] || last_checked=0
+    fi
+
+    if (( source_mtime <= last_checked )); then
+      skipped=$((skipped + 1))
+      continue
+    fi
+  fi
+
   echo "upload: $rel -> $dropbox_path"
 
   if [[ "$dry_run" -eq 1 ]]; then
@@ -172,7 +239,9 @@ for rel in "${rel_files[@]}"; do
     --header "Dropbox-API-Arg: $api_arg" \
     --header "Content-Type: application/octet-stream" \
     --data-binary @"$abs" >/dev/null; then
-    printf "%s\n" "$source_mtime" > "$state_file"
+    if [[ "$remote_compare" -eq 0 ]]; then
+      printf "%s\n" "$source_mtime" > "$state_file"
+    fi
     uploaded=$((uploaded + 1))
   else
     echo "error: upload failed for $rel" >&2
