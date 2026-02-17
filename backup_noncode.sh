@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--dry-run]
+Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--dry-run]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
 
@@ -18,6 +18,7 @@ Options:
                       Then uses "<dropbox>/echolab_backups".
   --include-archive   Include ./archive in backup (off by default).
   --whole-project     Backup the whole project folder (excludes .git and target).
+  --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
   --dry-run           Show what would be backed up without creating archive.
   -h, --help          Show help.
 EOF
@@ -26,6 +27,7 @@ EOF
 dest_root=""
 include_archive=0
 whole_project=0
+zip_overwrite=0
 dry_run=0
 
 while [[ $# -gt 0 ]]; do
@@ -41,6 +43,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --whole-project)
       whole_project=1
+      shift
+      ;;
+    --zip-overwrite)
+      zip_overwrite=1
       shift
       ;;
     --dry-run)
@@ -114,12 +120,26 @@ fi
 
 mkdir -p "$dest_root"
 timestamp="$(date '+%Y%m%d_%H%M%S')"
-out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
 
-if [[ "$whole_project" -eq 1 ]]; then
-  tar -czf "$out_file" --exclude=.git --exclude=target .
+if [[ "$zip_overwrite" -eq 1 ]]; then
+  if ! command -v zip >/dev/null 2>&1; then
+    echo "error: zip command not found." >&2
+    exit 1
+  fi
+  out_file="$dest_root/echolab_latest.zip"
+  rm -f "$out_file"
+  if [[ "$whole_project" -eq 1 ]]; then
+    zip -qry "$out_file" . -x ".git/*" "target/*"
+  else
+    zip -qry "$out_file" "${existing[@]}"
+  fi
 else
-  tar -czf "$out_file" "${existing[@]}"
+  out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
+  if [[ "$whole_project" -eq 1 ]]; then
+    tar -czf "$out_file" --exclude=.git --exclude=target .
+  else
+    tar -czf "$out_file" "${existing[@]}"
+  fi
 fi
 
 echo "Backup created: $out_file"

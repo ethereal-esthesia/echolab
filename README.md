@@ -103,7 +103,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
-- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project]`: timestamped backup to Dropbox (auto-detected) or custom destination.
+- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite]`: backup to Dropbox (auto-detected) or custom destination.
 
 ## Secret Scanning
 
@@ -151,6 +151,12 @@ Backup the whole project folder (excluding `.git/` and `target/`):
 
 ```bash
 ./backup_noncode.sh --whole-project
+```
+
+Create a single zip that always overwrites the previous one:
+
+```bash
+./backup_noncode.sh --whole-project --zip-overwrite
 ```
 
 ## Project Layout
