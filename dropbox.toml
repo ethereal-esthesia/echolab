@@ -1,0 +1,7 @@
+# Dropbox sync settings for local scripts.
+# Put your Dropbox API token in an environment variable, then reference its name here.
+token_env = "DROPBOX_ACCESS_TOKEN"
+
+# Optional default sync destination directory.
+# If empty or missing, scripts auto-detect Dropbox local folder.
+default_sync_dir = ""

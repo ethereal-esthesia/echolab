@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--state FILE] [--dry-run]
+Usage: ./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--state FILE] [--config FILE] [--dry-run]
 
 Copies FILE to Dropbox only when FILE is newer than the last recorded check.
 
@@ -20,6 +20,8 @@ Options:
   --name NAME     Output filename in destination (default: basename of source).
   --state FILE    State file path for last-check timestamp.
                   Default: .backup_state/dropbox_sync_<hash>.state
+  --config FILE   Dropbox config file path.
+                  Default: ./dropbox.toml
   --dry-run       Show what would happen without copying.
   -h, --help      Show help.
 EOF
@@ -29,6 +31,8 @@ source_file=""
 dest_root=""
 out_name=""
 state_file=""
+config_file="$SCRIPT_DIR/dropbox.toml"
+token_env_name=""
 dry_run=0
 
 while [[ $# -gt 0 ]]; do
@@ -53,6 +57,11 @@ while [[ $# -gt 0 ]]; do
       state_file="$2"
       shift 2
       ;;
+    --config)
+      [[ $# -ge 2 ]] || { echo "error: --config requires a path" >&2; exit 2; }
+      config_file="$2"
+      shift 2
+      ;;
     --dry-run)
       dry_run=1
       shift
@@ -71,6 +80,32 @@ done
 
 [[ -n "$source_file" ]] || { echo "error: --source is required" >&2; usage; exit 2; }
 [[ -f "$source_file" ]] || { echo "error: source file not found: $source_file" >&2; exit 1; }
+
+parse_toml_string() {
+  local key="$1"
+  local path="$2"
+  awk -F '=' -v key="$key" '
+    $1 ~ "^[[:space:]]*" key "[[:space:]]*$" {
+      val = $2
+      sub(/^[[:space:]]*/, "", val)
+      sub(/[[:space:]]*#.*/, "", val)
+      gsub(/^"/, "", val)
+      gsub(/"$/, "", val)
+      print val
+      exit
+    }
+  ' "$path"
+}
+
+if [[ -f "$config_file" ]]; then
+  if [[ -z "$dest_root" ]]; then
+    configured_dest="$(parse_toml_string "default_sync_dir" "$config_file" || true)"
+    if [[ -n "${configured_dest:-}" ]]; then
+      dest_root="$configured_dest"
+    fi
+  fi
+  token_env_name="$(parse_toml_string "token_env" "$config_file" || true)"
+fi
 
 if [[ -z "$dest_root" ]]; then
   if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
@@ -110,6 +145,9 @@ dest_file="$dest_root/$out_name"
 echo "Source: $source_abs"
 echo "Destination: $dest_file"
 echo "State file: $state_file"
+if [[ -n "$token_env_name" ]]; then
+  echo "Token env key (from config): $token_env_name"
+fi
 echo "Source mtime: $source_mtime"
 echo "Last checked mtime: $last_checked"
 
