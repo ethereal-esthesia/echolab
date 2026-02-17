@@ -261,22 +261,23 @@ direct_child_repos() {
   local repo_root="$1"
   local candidate
   local parent
-  local is_direct
+  local best_parent
+  local p
 
   for candidate in "${git_projects[@]}"; do
-    [[ "$candidate" == "$repo_root" ]] && continue
-    path_is_under "$candidate" "$repo_root" || continue
+    [[ "$candidate" == "." || "$candidate" == "$repo_root" ]] && continue
 
-    is_direct=1
-    for parent in "${git_projects[@]}"; do
-      [[ "$parent" == "$repo_root" || "$parent" == "$candidate" ]] && continue
-      if path_is_under "$candidate" "$parent" && path_is_under "$parent" "$repo_root"; then
-        is_direct=0
-        break
+    best_parent="."
+    for p in "${git_projects[@]}"; do
+      [[ "$p" == "." || "$p" == "$candidate" ]] && continue
+      path_is_under "$candidate" "$p" || continue
+
+      if [[ "$best_parent" == "." || "${#p}" -gt "${#best_parent}" ]]; then
+        best_parent="$p"
       fi
     done
 
-    if [[ "$is_direct" -eq 1 ]]; then
+    if [[ "$best_parent" == "$repo_root" ]]; then
       echo "$candidate"
     fi
   done | sort
