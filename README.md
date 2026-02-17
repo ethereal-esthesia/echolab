@@ -135,6 +135,7 @@ Create a backup archive of non-code assets to Dropbox (auto-detected):
 - Excludes every git-tracked path from backup output.
 - Applies extra wildcard excludes from `[exclude]` in `dropbox.toml`.
 - Prints each archived file by default.
+- Detects nested git repositories, excludes their `.git/` folders, and writes a queue file at `.backup_state/nested_git_repos.queue`.
 
 Preview included paths without writing an archive:
 

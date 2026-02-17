@@ -35,6 +35,8 @@ dry_run=0
 exclude_patterns=()
 git_excludes=()
 backup_folder_name="echolab_backups"
+nested_git_roots=()
+queue_file="$SCRIPT_DIR/.backup_state/nested_git_repos.queue"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -133,8 +135,27 @@ load_git_tracked_excludes() {
   done < <(git ls-files)
 }
 
+detect_nested_git_repos() {
+  while IFS= read -r git_dir; do
+    repo_root="${git_dir%/.git}"
+    repo_root="${repo_root#./}"
+    if [[ -n "$repo_root" && "$repo_root" != "." ]]; then
+      nested_git_roots+=("$repo_root")
+    fi
+  done < <(find . -type d -name .git -prune)
+}
+
+queue_nested_git_repos() {
+  mkdir -p "$(dirname "$queue_file")"
+  : > "$queue_file"
+  for repo_root in "${nested_git_roots[@]}"; do
+    printf "%s\n" "$repo_root" >> "$queue_file"
+  done
+}
+
 ensure_clean_git
 load_git_tracked_excludes
+detect_nested_git_repos
 
 if [[ -f "$config_file" ]]; then
   if [[ -z "$dest_root" ]]; then
@@ -207,13 +228,28 @@ if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
   done
 fi
 echo "Git-tracked excludes: ${#git_excludes[@]} paths"
+if [[ "${#nested_git_roots[@]}" -gt 0 ]]; then
+  echo "Nested git repos detected (${#nested_git_roots[@]}):"
+  for repo_root in "${nested_git_roots[@]}"; do
+    echo "  - $repo_root"
+  done
+else
+  echo "Nested git repos detected: 0"
+fi
 
 if [[ "$dry_run" -eq 1 ]]; then
+  if [[ "${#nested_git_roots[@]}" -gt 0 ]]; then
+    echo "Dry run: would queue nested repos in $queue_file"
+  fi
   echo "Dry run complete."
   exit 0
 fi
 
 mkdir -p "$dest_root"
+queue_nested_git_repos
+if [[ "${#nested_git_roots[@]}" -gt 0 ]]; then
+  echo "Nested repo queue written: $queue_file"
+fi
 timestamp="$(date '+%Y%m%d_%H%M%S')"
 
 if [[ "$zip_overwrite" -eq 1 ]]; then
@@ -225,6 +261,9 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
   rm -f "$out_file"
   if [[ "$whole_project" -eq 1 ]]; then
     zip_excludes=(".git/*" "target/*")
+    for repo_root in "${nested_git_roots[@]}"; do
+      zip_excludes+=("$repo_root/.git/*")
+    done
     for tracked in "${git_excludes[@]}"; do
       zip_excludes+=("$tracked")
     done
@@ -253,6 +292,9 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
 else
   out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
   tar_excludes=()
+  for repo_root in "${nested_git_roots[@]}"; do
+    tar_excludes+=(--exclude="$repo_root/.git" --exclude="$repo_root/.git/*")
+  done
   for tracked in "${git_excludes[@]}"; do
     tar_excludes+=(--exclude="$tracked")
   done
