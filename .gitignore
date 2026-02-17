@@ -13,6 +13,7 @@ out/
 .DS_Store
 .vscode/
 .idea/
+.backup_state/
 
 # Legacy reference imports
 archive/

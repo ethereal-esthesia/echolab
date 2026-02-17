@@ -104,6 +104,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
 - `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite]`: backup to Dropbox (auto-detected) or custom destination.
+- `./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME]`: copy one file only if source is newer than last check.
 
 ## Secret Scanning
 
@@ -157,6 +158,18 @@ Create a single zip that always overwrites the previous one:
 
 ```bash
 ./backup_noncode.sh --whole-project --zip-overwrite
+```
+
+Sync one file to Dropbox only when it changed (newer mtime):
+
+```bash
+./sync_to_dropbox.sh --source /path/to/echolab_latest.zip
+```
+
+Use a custom destination folder:
+
+```bash
+./sync_to_dropbox.sh --source /path/to/echolab_latest.zip --dest /path/to/dropbox/folder
 ```
 
 ## Project Layout
