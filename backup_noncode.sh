@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--dry-run]
+Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--dry-run]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
 
@@ -17,6 +17,7 @@ Options:
                         2) ~/Dropbox
                       Then uses "<dropbox>/echolab_backups".
   --include-archive   Include ./archive in backup (off by default).
+  --whole-project     Backup the whole project folder (excludes .git and target).
   --dry-run           Show what would be backed up without creating archive.
   -h, --help          Show help.
 EOF
@@ -24,6 +25,7 @@ EOF
 
 dest_root=""
 include_archive=0
+whole_project=0
 dry_run=0
 
 while [[ $# -gt 0 ]]; do
@@ -35,6 +37,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --include-archive)
       include_archive=1
+      shift
+      ;;
+    --whole-project)
+      whole_project=1
       shift
       ;;
     --dry-run)
@@ -64,34 +70,42 @@ if [[ -z "$dest_root" ]]; then
   fi
 fi
 
-items=(
-  "assets/roms"
-  "screenshots"
-  "echolab.toml"
-)
-
-if [[ "$include_archive" -eq 1 ]]; then
-  items+=("archive")
-fi
-
-existing=()
-for item in "${items[@]}"; do
-  if [[ -e "$item" ]]; then
-    existing+=("$item")
-  fi
-done
-
-if [[ "${#existing[@]}" -eq 0 ]]; then
-  echo "error: no backup targets found." >&2
-  exit 1
-fi
-
 echo "Backup source: $SCRIPT_DIR"
 echo "Backup target dir: $dest_root"
-printf 'Included paths:\n'
-for item in "${existing[@]}"; do
-  echo "  - $item"
-done
+if [[ "$whole_project" -eq 1 ]]; then
+  echo "Included paths:"
+  echo "  - . (whole project)"
+  echo "Excluded paths:"
+  echo "  - .git/"
+  echo "  - target/"
+else
+  items=(
+    "assets/roms"
+    "screenshots"
+    "echolab.toml"
+  )
+
+  if [[ "$include_archive" -eq 1 ]]; then
+    items+=("archive")
+  fi
+
+  existing=()
+  for item in "${items[@]}"; do
+    if [[ -e "$item" ]]; then
+      existing+=("$item")
+    fi
+  done
+
+  if [[ "${#existing[@]}" -eq 0 ]]; then
+    echo "error: no backup targets found." >&2
+    exit 1
+  fi
+
+  printf 'Included paths:\n'
+  for item in "${existing[@]}"; do
+    echo "  - $item"
+  done
+fi
 
 if [[ "$dry_run" -eq 1 ]]; then
   echo "Dry run complete."
@@ -102,5 +116,10 @@ mkdir -p "$dest_root"
 timestamp="$(date '+%Y%m%d_%H%M%S')"
 out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
 
-tar -czf "$out_file" "${existing[@]}"
+if [[ "$whole_project" -eq 1 ]]; then
+  tar -czf "$out_file" --exclude=.git --exclude=target .
+else
+  tar -czf "$out_file" "${existing[@]}"
+fi
+
 echo "Backup created: $out_file"
