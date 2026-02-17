@@ -190,12 +190,16 @@ Configure Dropbox sync defaults and token environment key in:
 ./dropbox.toml
 ```
 
+`sync_folder_name` and `backup_folder_name` control the auto-detected Dropbox subfolder names when `default_sync_dir` / `default_backup_dir` are empty.
+
 Example:
 
 ```toml
 token_env = "DROPBOX_ACCESS_TOKEN"
 default_sync_dir = "/path/to/dropbox/echolab_sync"
+sync_folder_name = "echolab_sync"
 default_backup_dir = "/path/to/dropbox/echolab_backups"
+backup_folder_name = "echolab_backups"
 
 [exclude]
 env = ".env*"

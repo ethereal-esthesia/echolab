@@ -5,10 +5,12 @@ token_env = "DROPBOX_ACCESS_TOKEN"
 # Optional default sync destination directory.
 # If empty or missing, scripts auto-detect Dropbox local folder.
 default_sync_dir = ""
+sync_folder_name = "echolab_sync"
 
 # Optional default backup destination directory.
 # If empty or missing, scripts auto-detect Dropbox local folder.
 default_backup_dir = ""
+backup_folder_name = "echolab_backups"
 
 [exclude]
 # Wildcard patterns excluded from backup archives.

@@ -16,7 +16,7 @@ Options:
                   Default: auto-detect Dropbox:
                     1) ~/Library/CloudStorage/Dropbox
                     2) ~/Dropbox
-                  Then uses "<dropbox>/echolab_sync".
+                  Then uses "<dropbox>/<sync_folder_name>" from config.
   --name NAME     Output filename in destination (default: basename of source).
   --state FILE    State file path for last-check timestamp.
                   Default: .backup_state/dropbox_sync_<hash>.state
@@ -33,6 +33,7 @@ out_name=""
 state_file=""
 config_file="$SCRIPT_DIR/dropbox.toml"
 token_env_name=""
+sync_folder_name="echolab_sync"
 dry_run=0
 
 while [[ $# -gt 0 ]]; do
@@ -105,13 +106,17 @@ if [[ -f "$config_file" ]]; then
     fi
   fi
   token_env_name="$(parse_toml_string "token_env" "$config_file" || true)"
+  configured_folder="$(parse_toml_string "sync_folder_name" "$config_file" || true)"
+  if [[ -n "${configured_folder:-}" ]]; then
+    sync_folder_name="$configured_folder"
+  fi
 fi
 
 if [[ -z "$dest_root" ]]; then
   if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
-    dest_root="$HOME/Library/CloudStorage/Dropbox/echolab_sync"
+    dest_root="$HOME/Library/CloudStorage/Dropbox/$sync_folder_name"
   elif [[ -d "$HOME/Dropbox" ]]; then
-    dest_root="$HOME/Dropbox/echolab_sync"
+    dest_root="$HOME/Dropbox/$sync_folder_name"
   else
     echo "error: Dropbox folder not found. Provide --dest DIR." >&2
     exit 1

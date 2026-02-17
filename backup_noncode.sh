@@ -16,7 +16,7 @@ Options:
                       Default: auto-detect Dropbox:
                         1) ~/Library/CloudStorage/Dropbox
                         2) ~/Dropbox
-                      Then uses "<dropbox>/echolab_backups".
+                      Then uses "<dropbox>/<backup_folder_name>" from config.
   --include-archive   Include ./archive in backup (off by default).
   --whole-project     Backup the whole project folder (excludes .git and target).
   --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
@@ -34,6 +34,7 @@ config_file="$SCRIPT_DIR/dropbox.toml"
 dry_run=0
 exclude_patterns=()
 git_excludes=()
+backup_folder_name="echolab_backups"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -142,6 +143,10 @@ if [[ -f "$config_file" ]]; then
       dest_root="$configured_dest"
     fi
   fi
+  configured_folder="$(parse_toml_string "backup_folder_name" "$config_file" || true)"
+  if [[ -n "${configured_folder:-}" ]]; then
+    backup_folder_name="$configured_folder"
+  fi
   while IFS= read -r pattern; do
     [[ -n "$pattern" ]] && exclude_patterns+=("$pattern")
   done < <(parse_exclude_patterns "$config_file")
@@ -149,9 +154,9 @@ fi
 
 if [[ -z "$dest_root" ]]; then
   if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
-    dest_root="$HOME/Library/CloudStorage/Dropbox/echolab_backups"
+    dest_root="$HOME/Library/CloudStorage/Dropbox/$backup_folder_name"
   elif [[ -d "$HOME/Dropbox" ]]; then
-    dest_root="$HOME/Dropbox/echolab_backups"
+    dest_root="$HOME/Dropbox/$backup_folder_name"
   else
     echo "error: Dropbox folder not found. Provide --dest DIR." >&2
     exit 1
