@@ -170,11 +170,18 @@ fi
 
 mkdir -p "$(dirname "$state_file")"
 api_arg=$(printf '{"path":"%s","mode":"overwrite","autorename":false,"mute":true,"strict_conflict":false}' "$dropbox_path")
-curl -sS -X POST "https://content.dropboxapi.com/2/files/upload" \
+upload_resp="$(curl -sS -f -X POST "https://content.dropboxapi.com/2/files/upload" \
   --header "Authorization: Bearer $dropbox_token" \
   --header "Dropbox-API-Arg: $api_arg" \
   --header "Content-Type: application/octet-stream" \
-  --data-binary @"$source_file" >/dev/null
+  --data-binary @"$source_file")" || {
+  echo "error: Dropbox upload failed for $dropbox_path" >&2
+  exit 1
+}
+if printf "%s" "$upload_resp" | grep -q '"error_summary"'; then
+  echo "error: Dropbox upload returned API error: $upload_resp" >&2
+  exit 1
+fi
 printf "%s\n" "$source_mtime" > "$state_file"
 
 echo "Uploaded: $dropbox_path"

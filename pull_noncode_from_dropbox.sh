@@ -184,14 +184,14 @@ list_dropbox_files() {
     if [[ -z "$cursor" ]]; then
       local body
       body=$(printf '{"path":"%s","recursive":true,"include_deleted":false,"include_non_downloadable_files":false}' "$path")
-      resp="$(curl -sS -X POST "https://api.dropboxapi.com/2/files/list_folder" \
+      resp="$(curl -sS -f -X POST "https://api.dropboxapi.com/2/files/list_folder" \
         --header "Authorization: Bearer $dropbox_token" \
         --header "Content-Type: application/json" \
         --data "$body")"
     else
       local body
       body=$(printf '{"cursor":"%s"}' "$cursor")
-      resp="$(curl -sS -X POST "https://api.dropboxapi.com/2/files/list_folder/continue" \
+      resp="$(curl -sS -f -X POST "https://api.dropboxapi.com/2/files/list_folder/continue" \
         --header "Authorization: Bearer $dropbox_token" \
         --header "Content-Type: application/json" \
         --data "$body")"
@@ -298,7 +298,7 @@ while IFS=$'\t' read -r path_display rev server_modified; do
 
   mkdir -p "$(dirname "$local_abs")"
   api_arg=$(printf '{"path":"%s"}' "$path_display")
-  if curl -sS -X POST "https://content.dropboxapi.com/2/files/download" \
+  if curl -sS -f -X POST "https://content.dropboxapi.com/2/files/download" \
     --header "Authorization: Bearer $dropbox_token" \
     --header "Dropbox-API-Arg: $api_arg" \
     -o "$local_abs"; then

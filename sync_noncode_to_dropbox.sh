@@ -214,6 +214,13 @@ for rel in "${rel_files[@]}"; do
       continue
     fi
     if (( remote_mtime > 0 && source_mtime <= remote_mtime )); then
+      if stat -f %z "$abs" >/dev/null 2>&1; then
+        source_size="$(stat -f %z "$abs")"
+      else
+        source_size="$(stat -c %s "$abs")"
+      fi
+      source_hash="$(file_sha1 "$abs")"
+      printf "%s\t%s\t%s\n" "$source_mtime" "$source_size" "$source_hash" > "$state_file"
       skipped=$((skipped + 1))
       continue
     fi
@@ -270,11 +277,17 @@ for rel in "${rel_files[@]}"; do
   fi
 
   api_arg=$(printf '{"path":"%s","mode":"overwrite","autorename":false,"mute":true,"strict_conflict":false}' "$dropbox_path")
-  if curl -sS -X POST "https://content.dropboxapi.com/2/files/upload" \
+  upload_resp=""
+  if upload_resp="$(curl -sS -f -X POST "https://content.dropboxapi.com/2/files/upload" \
     --header "Authorization: Bearer $dropbox_token" \
     --header "Dropbox-API-Arg: $api_arg" \
     --header "Content-Type: application/octet-stream" \
-    --data-binary @"$abs" >/dev/null; then
+    --data-binary @"$abs")"; then
+    if printf "%s" "$upload_resp" | grep -q '"error_summary"'; then
+      echo "error: API upload failed for $rel: $upload_resp" >&2
+      failed=$((failed + 1))
+      continue
+    fi
     if stat -f %z "$abs" >/dev/null 2>&1; then
       source_size="$(stat -f %z "$abs")"
     else
