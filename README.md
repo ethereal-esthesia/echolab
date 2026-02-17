@@ -103,6 +103,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
+- `./backup_noncode.sh [--dest DIR] [--include-archive]`: timestamped backup of non-code assets (`assets/roms`, `screenshots`, `echolab.toml`) to Dropbox (auto-detected) or custom destination.
 
 ## Secret Scanning
 
@@ -119,6 +120,32 @@ brew install gitleaks
 ```
 
 CI secret scanning also runs on push and pull requests via GitHub Actions (`.github/workflows/secret-scan.yml`).
+
+## Backup Non-Code Assets
+
+Create a backup archive of non-code assets to Dropbox (auto-detected):
+
+```bash
+./backup_noncode.sh
+```
+
+Preview included paths without writing an archive:
+
+```bash
+./backup_noncode.sh --dry-run
+```
+
+Use a custom destination:
+
+```bash
+./backup_noncode.sh --dest /path/to/backups
+```
+
+Include `archive/` in the backup (off by default):
+
+```bash
+./backup_noncode.sh --include-archive
+```
 
 ## Project Layout
 

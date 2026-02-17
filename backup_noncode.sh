@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+usage() {
+  cat <<'EOF'
+Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--dry-run]
+
+Creates a timestamped .tar.gz backup of non-code project assets.
+
+Options:
+  --dest DIR          Backup destination directory.
+                      Default: auto-detect Dropbox:
+                        1) ~/Library/CloudStorage/Dropbox
+                        2) ~/Dropbox
+                      Then uses "<dropbox>/echolab_backups".
+  --include-archive   Include ./archive in backup (off by default).
+  --dry-run           Show what would be backed up without creating archive.
+  -h, --help          Show help.
+EOF
+}
+
+dest_root=""
+include_archive=0
+dry_run=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dest)
+      [[ $# -ge 2 ]] || { echo "error: --dest requires a path" >&2; exit 2; }
+      dest_root="$2"
+      shift 2
+      ;;
+    --include-archive)
+      include_archive=1
+      shift
+      ;;
+    --dry-run)
+      dry_run=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "error: unknown arg: $1" >&2
+      usage
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -z "$dest_root" ]]; then
+  if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
+    dest_root="$HOME/Library/CloudStorage/Dropbox/echolab_backups"
+  elif [[ -d "$HOME/Dropbox" ]]; then
+    dest_root="$HOME/Dropbox/echolab_backups"
+  else
+    echo "error: Dropbox folder not found. Provide --dest DIR." >&2
+    exit 1
+  fi
+fi
+
+items=(
+  "assets/roms"
+  "screenshots"
+  "echolab.toml"
+)
+
+if [[ "$include_archive" -eq 1 ]]; then
+  items+=("archive")
+fi
+
+existing=()
+for item in "${items[@]}"; do
+  if [[ -e "$item" ]]; then
+    existing+=("$item")
+  fi
+done
+
+if [[ "${#existing[@]}" -eq 0 ]]; then
+  echo "error: no backup targets found." >&2
+  exit 1
+fi
+
+echo "Backup source: $SCRIPT_DIR"
+echo "Backup target dir: $dest_root"
+printf 'Included paths:\n'
+for item in "${existing[@]}"; do
+  echo "  - $item"
+done
+
+if [[ "$dry_run" -eq 1 ]]; then
+  echo "Dry run complete."
+  exit 0
+fi
+
+mkdir -p "$dest_root"
+timestamp="$(date '+%Y%m%d_%H%M%S')"
+out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
+
+tar -czf "$out_file" "${existing[@]}"
+echo "Backup created: $out_file"
