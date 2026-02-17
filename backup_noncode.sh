@@ -154,16 +154,9 @@ discover_git_projects() {
 }
 
 load_git_tracked_excludes() {
-  for repo_root in "${git_projects[@]}"; do
-    while IFS= read -r tracked; do
-      [[ -n "$tracked" ]] || continue
-      if [[ "$repo_root" == "." ]]; then
-        git_excludes+=("$tracked")
-      else
-        git_excludes+=("$repo_root/$tracked")
-      fi
-    done < <(git -C "$repo_root" ls-files 2>/dev/null || true)
-  done
+  while IFS= read -r tracked; do
+    [[ -n "$tracked" ]] && git_excludes+=("$tracked")
+  done < <(git ls-files)
 }
 
 build_nested_git_roots() {
