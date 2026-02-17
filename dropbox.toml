@@ -5,3 +5,13 @@ token_env = "DROPBOX_ACCESS_TOKEN"
 # Optional default sync destination directory.
 # If empty or missing, scripts auto-detect Dropbox local folder.
 default_sync_dir = ""
+
+# Optional default backup destination directory.
+# If empty or missing, scripts auto-detect Dropbox local folder.
+default_backup_dir = ""
+
+[exclude]
+# Wildcard patterns excluded from backup archives.
+env = ".env*"
+pem = "*.pem"
+keys = "*.key"

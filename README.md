@@ -103,7 +103,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
-- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite]`: backup to Dropbox (auto-detected) or custom destination.
+- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE]`: backup to Dropbox (auto-detected) or custom destination.
 - `./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--config FILE]`: copy one file only if source is newer than last check.
 
 ## Secret Scanning
@@ -160,6 +160,12 @@ Create a single zip that always overwrites the previous one:
 ./backup_noncode.sh --whole-project --zip-overwrite
 ```
 
+Use a custom config file:
+
+```bash
+./backup_noncode.sh --whole-project --zip-overwrite --config /path/to/dropbox.toml
+```
+
 Sync one file to Dropbox only when it changed (newer mtime):
 
 ```bash
@@ -183,6 +189,12 @@ Example:
 ```toml
 token_env = "DROPBOX_ACCESS_TOKEN"
 default_sync_dir = "/path/to/dropbox/echolab_sync"
+default_backup_dir = "/path/to/dropbox/echolab_backups"
+
+[exclude]
+env = ".env*"
+pem = "*.pem"
+keys = "*.key"
 ```
 
 ## Project Layout
@@ -209,7 +221,7 @@ default_sync_dir = "/path/to/dropbox/echolab_sync"
 - `examples/hello_text.rs`: simple text-page hello-world render demo
 - `examples/sdl3_text40x24.rs`: SDL3 windowed 40x24 text display demo
 - `echolab.toml`: default app config values (screenshot directory, auto-exit)
-- `dropbox.toml`: Dropbox sync config (token env variable key and optional default sync directory)
+- `dropbox.toml`: Dropbox backup/sync config (token env key, optional default dirs, wildcard exclude list)
 - `tools/charrom_export.py`: export ROM glyphs to editable BMP/PNG
 - `tools/charrom_import.py`: import edited BMP/PNG back into ROM bytes
 - `archive/`: imported legacy projects kept for reference

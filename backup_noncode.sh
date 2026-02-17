@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--dry-run]
+Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
 
@@ -19,6 +19,7 @@ Options:
   --include-archive   Include ./archive in backup (off by default).
   --whole-project     Backup the whole project folder (excludes .git and target).
   --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
+  --config FILE       Dropbox config file path (default: ./dropbox.toml).
   --dry-run           Show what would be backed up without creating archive.
   -h, --help          Show help.
 EOF
@@ -28,7 +29,9 @@ dest_root=""
 include_archive=0
 whole_project=0
 zip_overwrite=0
+config_file="$SCRIPT_DIR/dropbox.toml"
 dry_run=0
+exclude_patterns=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -49,6 +52,11 @@ while [[ $# -gt 0 ]]; do
       zip_overwrite=1
       shift
       ;;
+    --config)
+      [[ $# -ge 2 ]] || { echo "error: --config requires a path" >&2; exit 2; }
+      config_file="$2"
+      shift 2
+      ;;
     --dry-run)
       dry_run=1
       shift
@@ -64,6 +72,57 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+parse_toml_string() {
+  local key="$1"
+  local path="$2"
+  awk -F '=' -v key="$key" '
+    $1 ~ "^[[:space:]]*" key "[[:space:]]*$" {
+      val = $2
+      sub(/^[[:space:]]*/, "", val)
+      sub(/[[:space:]]*#.*/, "", val)
+      gsub(/^"/, "", val)
+      gsub(/"$/, "", val)
+      print val
+      exit
+    }
+  ' "$path"
+}
+
+parse_exclude_patterns() {
+  local path="$1"
+  awk '
+    BEGIN { in_exclude = 0 }
+    {
+      line = $0
+      sub(/[[:space:]]*#.*/, "", line)
+      if (line ~ /^[[:space:]]*\[[^]]+\][[:space:]]*$/) {
+        in_exclude = (line ~ /^[[:space:]]*\[exclude\][[:space:]]*$/)
+        next
+      }
+      if (in_exclude && line ~ /=/) {
+        sub(/^[[:space:]]*[^=]+=[[:space:]]*/, "", line)
+        gsub(/^"/, "", line)
+        gsub(/"$/, "", line)
+        if (length(line) > 0) {
+          print line
+        }
+      }
+    }
+  ' "$path"
+}
+
+if [[ -f "$config_file" ]]; then
+  if [[ -z "$dest_root" ]]; then
+    configured_dest="$(parse_toml_string "default_backup_dir" "$config_file" || true)"
+    if [[ -n "${configured_dest:-}" ]]; then
+      dest_root="$configured_dest"
+    fi
+  fi
+  while IFS= read -r pattern; do
+    [[ -n "$pattern" ]] && exclude_patterns+=("$pattern")
+  done < <(parse_exclude_patterns "$config_file")
+fi
 
 if [[ -z "$dest_root" ]]; then
   if [[ -d "$HOME/Library/CloudStorage/Dropbox" ]]; then
@@ -113,6 +172,13 @@ else
   done
 fi
 
+if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
+  echo "Config excludes:"
+  for pattern in "${exclude_patterns[@]}"; do
+    echo "  - $pattern"
+  done
+fi
+
 if [[ "$dry_run" -eq 1 ]]; then
   echo "Dry run complete."
   exit 0
@@ -129,16 +195,28 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
   out_file="$dest_root/echolab_latest.zip"
   rm -f "$out_file"
   if [[ "$whole_project" -eq 1 ]]; then
-    zip -qry "$out_file" . -x ".git/*" "target/*"
+    zip_excludes=(".git/*" "target/*")
+    for pattern in "${exclude_patterns[@]}"; do
+      zip_excludes+=("$pattern")
+    done
+    zip -qry "$out_file" . -x "${zip_excludes[@]}"
   else
-    zip -qry "$out_file" "${existing[@]}"
+    if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
+      zip -qry "$out_file" "${existing[@]}" -x "${exclude_patterns[@]}"
+    else
+      zip -qry "$out_file" "${existing[@]}"
+    fi
   fi
 else
   out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
+  tar_excludes=()
+  for pattern in "${exclude_patterns[@]}"; do
+    tar_excludes+=(--exclude="$pattern")
+  done
   if [[ "$whole_project" -eq 1 ]]; then
-    tar -czf "$out_file" --exclude=.git --exclude=target .
+    tar -czf "$out_file" --exclude=.git --exclude=target "${tar_excludes[@]}" .
   else
-    tar -czf "$out_file" "${existing[@]}"
+    tar -czf "$out_file" "${tar_excludes[@]}" "${existing[@]}"
   fi
 fi
 
