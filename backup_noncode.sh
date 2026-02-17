@@ -9,6 +9,7 @@ usage() {
 Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
+Backups exclude all git-tracked files and require a clean git working tree.
 
 Options:
   --dest DIR          Backup destination directory.
@@ -32,6 +33,7 @@ zip_overwrite=0
 config_file="$SCRIPT_DIR/dropbox.toml"
 dry_run=0
 exclude_patterns=()
+git_excludes=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -112,6 +114,27 @@ parse_exclude_patterns() {
   ' "$path"
 }
 
+ensure_clean_git() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "error: backup_noncode.sh must run inside a git repository." >&2
+    exit 1
+  fi
+
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo "error: git working tree is not clean. Commit/stash changes before backup." >&2
+    exit 1
+  fi
+}
+
+load_git_tracked_excludes() {
+  while IFS= read -r tracked; do
+    [[ -n "$tracked" ]] && git_excludes+=("$tracked")
+  done < <(git ls-files)
+}
+
+ensure_clean_git
+load_git_tracked_excludes
+
 if [[ -f "$config_file" ]]; then
   if [[ -z "$dest_root" ]]; then
     configured_dest="$(parse_toml_string "default_backup_dir" "$config_file" || true)"
@@ -178,6 +201,7 @@ if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
     echo "  - $pattern"
   done
 fi
+echo "Git-tracked excludes: ${#git_excludes[@]} paths"
 
 if [[ "$dry_run" -eq 1 ]]; then
   echo "Dry run complete."
@@ -196,20 +220,37 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
   rm -f "$out_file"
   if [[ "$whole_project" -eq 1 ]]; then
     zip_excludes=(".git/*" "target/*")
+    for tracked in "${git_excludes[@]}"; do
+      zip_excludes+=("$tracked")
+    done
     for pattern in "${exclude_patterns[@]}"; do
       zip_excludes+=("$pattern")
     done
     zip -qry "$out_file" . -x "${zip_excludes[@]}"
   else
+    zip_excludes=()
+    for tracked in "${git_excludes[@]}"; do
+      zip_excludes+=("$tracked")
+    done
+    for pattern in "${exclude_patterns[@]}"; do
+      zip_excludes+=("$pattern")
+    done
     if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
-      zip -qry "$out_file" "${existing[@]}" -x "${exclude_patterns[@]}"
+      zip -qry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
     else
-      zip -qry "$out_file" "${existing[@]}"
+      if [[ "${#zip_excludes[@]}" -gt 0 ]]; then
+        zip -qry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
+      else
+        zip -qry "$out_file" "${existing[@]}"
+      fi
     fi
   fi
 else
   out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
   tar_excludes=()
+  for tracked in "${git_excludes[@]}"; do
+    tar_excludes+=(--exclude="$tracked")
+  done
   for pattern in "${exclude_patterns[@]}"; do
     tar_excludes+=(--exclude="$pattern")
   done

@@ -103,7 +103,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
-- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE]`: backup to Dropbox (auto-detected) or custom destination.
+- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE]`: backup to Dropbox (auto-detected) or custom destination; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--config FILE]`: copy one file only if source is newer than last check.
 
 ## Secret Scanning
@@ -129,6 +129,11 @@ Create a backup archive of non-code assets to Dropbox (auto-detected):
 ```bash
 ./backup_noncode.sh
 ```
+
+`backup_noncode.sh` safety rules:
+- Requires a clean git working tree.
+- Excludes every git-tracked path from backup output.
+- Applies extra wildcard excludes from `[exclude]` in `dropbox.toml`.
 
 Preview included paths without writing an archive:
 
