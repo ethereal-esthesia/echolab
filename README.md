@@ -106,6 +106,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh --source FILE [--dest PATH] [--name FILENAME] [--config FILE]`: upload one file via Dropbox API only if source is newer than last check.
 - `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--remote-compare] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
+- `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged revisions.
 
 ## Secret Scanning
 
@@ -205,6 +206,12 @@ Use Dropbox metadata timestamps instead of local state files:
 Default local mode is content-aware:
 - Fast path: skip when `mtime` and file size are unchanged.
 - Fallback: if timestamps drift, compare stored content hash and skip if bytes are identical.
+
+Pull non-code files from Dropbox (revision-aware incremental download):
+
+```bash
+./pull_noncode_from_dropbox.sh --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
+```
 
 Configure Dropbox sync defaults and token environment key in:
 
