@@ -104,8 +104,9 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
-- `./sync_to_dropbox.sh --source FILE [--dest PATH] [--name FILENAME] [--config FILE]`: upload one file via Dropbox API only if source is newer than last check.
-- `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--remote-compare] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
+- `./sync_to_dropbox.sh --source FILE [--dest PATH] [--name FILENAME] [--allow-tracked] [--config FILE]`: upload one file via Dropbox API only if source is newer than last check.
+- `./sync_to_dropbox.sh --noncode [--dest PATH] [--state-dir DIR] [--remote-compare] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
+- `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--remote-compare] [--dry-run]`: compatibility wrapper for non-code mode.
 - `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using revision+timestamp checks.
 
 ## Secret Scanning
@@ -192,13 +193,13 @@ Use a custom Dropbox destination path:
 Upload scheduled non-code files individually (incremental, path-preserving):
 
 ```bash
-./sync_noncode_to_dropbox.sh --dest /echolab_sync/noncode
+./sync_to_dropbox.sh --noncode --dest /echolab_sync/noncode
 ```
 
 Use Dropbox metadata timestamps instead of local state files:
 
 ```bash
-./sync_noncode_to_dropbox.sh --dest /echolab_sync/noncode --remote-compare
+./sync_to_dropbox.sh --noncode --dest /echolab_sync/noncode --remote-compare
 ```
 
 `--remote-compare` still updates local per-file state on successful uploads, so follow-up default runs skip unchanged files.
