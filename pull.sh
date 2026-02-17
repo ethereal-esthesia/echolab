@@ -22,6 +22,7 @@ Options:
   --dropbox-dest DIR    Local destination root for non-code pull.
   --state-dir DIR       State dir for non-code pull.
   --config FILE         Dropbox config file path.
+  --yes                 Skip Dropbox y/N confirmation prompt.
   --dry-run             Print actions; Dropbox side runs in --dry-run mode.
   -h, --help            Show help.
 EOF
@@ -36,6 +37,7 @@ dropbox_src=""
 dropbox_dest=""
 state_dir=""
 config_file=""
+assume_yes=0
 dry_run=0
 
 while [[ $# -gt 0 ]]; do
@@ -88,6 +90,10 @@ while [[ $# -gt 0 ]]; do
       dry_run=1
       shift
       ;;
+    --yes)
+      assume_yes=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -118,6 +124,22 @@ if [[ "$run_git" -eq 1 ]]; then
 fi
 
 if [[ "$run_dropbox" -eq 1 ]]; then
+  if [[ "$assume_yes" -eq 0 ]]; then
+    if [[ -t 0 ]]; then
+      printf "Run Dropbox pull now? [y/N] " >&2
+      read -r reply || true
+      case "$reply" in
+        [yY]|[yY][eE][sS]) ;;
+        *)
+          echo "Skipped Dropbox pull." >&2
+          exit 0
+          ;;
+      esac
+    else
+      echo "error: Dropbox pull confirmation required (non-interactive shell). Use --yes." >&2
+      exit 2
+    fi
+  fi
   dropbox_args=(--pull)
   [[ -n "$dropbox_src" ]] && dropbox_args+=(--src "$dropbox_src")
   [[ -n "$dropbox_dest" ]] && dropbox_args+=(--dest "$dropbox_dest")
