@@ -143,6 +143,7 @@ Show only the files scheduled for backup (no archive written, with per-file size
 - Prints each archived file by default.
 - Detects nested git repositories, excludes their `.git/` folders, and writes a queue file at `.backup_state/nested_git_repos.queue`.
 - Default candidate paths include `archive/`; control inclusion via `[exclude]` in `dropbox.toml`.
+- `--list-only` is grouped by per-project runs so nested git repos are evaluated separately.
 
 Preview included paths without writing an archive:
 

@@ -35,6 +35,7 @@ list_only=0
 exclude_patterns=()
 git_excludes=()
 backup_folder_name="echolab_backups"
+git_projects=()
 nested_git_roots=()
 queue_file="$SCRIPT_DIR/.backup_state/nested_git_repos.queue"
 
@@ -129,20 +130,38 @@ ensure_clean_git() {
   fi
 }
 
-load_git_tracked_excludes() {
-  while IFS= read -r tracked; do
-    [[ -n "$tracked" ]] && git_excludes+=("$tracked")
-  done < <(git ls-files)
+discover_git_projects() {
+  while IFS= read -r repo_root; do
+    [[ -n "$repo_root" ]] && git_projects+=("$repo_root")
+  done < <(
+    find . -type d -name .git -prune \
+      | sed -e 's#^\./##' -e 's#/.git$##' -e 's#^$#.#' \
+      | awk '{ print length, $0 }' \
+      | sort -n -k1,1 -k2,2 \
+      | awk '{ $1=""; sub(/^ /,""); print }'
+  )
 }
 
-detect_nested_git_repos() {
-  while IFS= read -r git_dir; do
-    repo_root="${git_dir%/.git}"
-    repo_root="${repo_root#./}"
-    if [[ -n "$repo_root" && "$repo_root" != "." ]]; then
+load_git_tracked_excludes() {
+  for repo_root in "${git_projects[@]}"; do
+    while IFS= read -r tracked; do
+      [[ -n "$tracked" ]] || continue
+      if [[ "$repo_root" == "." ]]; then
+        git_excludes+=("$tracked")
+      else
+        git_excludes+=("$repo_root/$tracked")
+      fi
+    done < <(git -C "$repo_root" ls-files 2>/dev/null || true)
+  done
+}
+
+build_nested_git_roots() {
+  nested_git_roots=()
+  for repo_root in "${git_projects[@]}"; do
+    if [[ "$repo_root" != "." ]]; then
       nested_git_roots+=("$repo_root")
     fi
-  done < <(find . -type d -name .git -prune)
+  done
 }
 
 queue_nested_git_repos() {
@@ -151,6 +170,75 @@ queue_nested_git_repos() {
   for repo_root in "${nested_git_roots[@]}"; do
     printf "%s\n" "$repo_root" >> "$queue_file"
   done
+}
+
+path_is_under() {
+  local child="$1"
+  local parent="$2"
+  if [[ "$parent" == "." ]]; then
+    return 0
+  fi
+  [[ "$child" == "$parent" || "$child" == "$parent/"* ]]
+}
+
+collect_project_scan_roots() {
+  local repo_root="$1"
+  local roots=()
+  local candidate
+
+  if [[ "$whole_project" -eq 1 ]]; then
+    roots+=("$repo_root")
+  else
+    for candidate in "${existing[@]}"; do
+      if path_is_under "$candidate" "$repo_root"; then
+        roots+=("$candidate")
+      elif path_is_under "$repo_root" "$candidate"; then
+        roots+=("$repo_root")
+      fi
+    done
+  fi
+
+  printf "%s\n" "${roots[@]}" | awk 'NF' | sort -u
+}
+
+collect_project_files() {
+  local repo_root="$1"
+  local scan_root
+  local other_repo
+  local prune_expr=()
+  local first=1
+
+  for other_repo in "${git_projects[@]}"; do
+    [[ "$other_repo" == "$repo_root" ]] && continue
+    if path_is_under "$other_repo" "$repo_root"; then
+      if [[ "$first" -eq 0 ]]; then
+        prune_expr+=(-o)
+      fi
+      prune_expr+=(-path "$other_repo")
+      first=0
+    fi
+  done
+
+  while IFS= read -r scan_root; do
+    [[ -n "$scan_root" ]] || continue
+    if [[ -f "$scan_root" ]]; then
+      printf "%s\n" "$scan_root"
+      continue
+    fi
+    if [[ ! -d "$scan_root" ]]; then
+      continue
+    fi
+
+    if [[ "${#prune_expr[@]}" -gt 0 ]]; then
+      find "$scan_root" \
+        \( -name .git -o "${prune_expr[0]}" "${prune_expr[@]:1}" \) -prune -o \
+        -type f -print
+    else
+      find "$scan_root" \
+        \( -name .git \) -prune -o \
+        -type f -print
+    fi
+  done < <(collect_project_scan_roots "$repo_root")
 }
 
 should_exclude_file() {
@@ -223,8 +311,9 @@ print_scheduled_file() {
 }
 
 ensure_clean_git
+discover_git_projects
 load_git_tracked_excludes
-detect_nested_git_repos
+build_nested_git_roots
 
 if [[ -f "$config_file" ]]; then
   if [[ -z "$dest_root" ]]; then
@@ -305,20 +394,14 @@ fi
 
 if [[ "$list_only" -eq 1 ]]; then
   echo "Scheduled files:"
-  if [[ "$whole_project" -eq 1 ]]; then
+  for repo_root in "${git_projects[@]}"; do
+    echo "Project run: $repo_root"
     while IFS= read -r f; do
       rel="${f#./}"
       should_exclude_file "$rel" && continue
       print_scheduled_file "$rel"
-    done < <(find . -type d \( -name .git -o -name target \) -prune -o -type f -print | sort)
-  else
-    for item in "${existing[@]}"; do
-      while IFS= read -r f; do
-        should_exclude_file "$f" && continue
-        print_scheduled_file "$f"
-      done < <(collect_candidate_files "$item" | sort)
-    done
-  fi
+    done < <(collect_project_files "$repo_root" | sort -u)
+  done
   exit 0
 fi
 
