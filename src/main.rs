@@ -2,7 +2,7 @@ use echo_lab::lab::Lab;
 use echo_lab::machines::iie;
 
 fn main() {
-    let lab = Lab::new("Echo Lab").with_machine(iie::apple_iie());
+    let lab = Lab::new("EchoLab").with_machine(iie::apple_iie());
 
     println!("{}", lab.title());
     println!("Machines in lab:");

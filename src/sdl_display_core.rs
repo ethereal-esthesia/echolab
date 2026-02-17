@@ -112,7 +112,7 @@ pub struct SdlDisplayCoreOptions {
 impl Default for SdlDisplayCoreOptions {
     fn default() -> Self {
         Self {
-            title: "Echo Lab SDL3 Display".to_owned(),
+            title: "EchoLab SDL3 Display".to_owned(),
             config_path: "echolab.toml".to_owned(),
             config_path_explicit: false,
             capture: CaptureOptions::default(),

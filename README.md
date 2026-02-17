@@ -1,4 +1,4 @@
-# Echo Lab
+# EchoLab
 
 EchoLab is a repository for retro machines emulation and experimentation.
 

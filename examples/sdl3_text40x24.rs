@@ -146,7 +146,7 @@ mod app {
         let mut state = DemoState::new(options.flip_test, options.bw_flip_test);
 
         let core_options = SdlDisplayCoreOptions {
-            title: "Echo Lab SDL3 Text 40x24".to_owned(),
+            title: "EchoLab SDL3 Text 40x24".to_owned(),
             config_path: options.config_path,
             config_path_explicit: options.config_path_explicit,
             capture: options.capture,
