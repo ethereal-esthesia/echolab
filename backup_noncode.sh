@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run]
+Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
 Backups exclude all git-tracked files and require a clean git working tree.
@@ -22,6 +22,7 @@ Options:
   --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
   --config FILE       Dropbox config file path (default: ./dropbox.toml).
   --dry-run           Show what would be backed up without creating archive.
+  --list-only         Print files that would be backed up, then exit.
   -h, --help          Show help.
 EOF
 }
@@ -32,6 +33,7 @@ whole_project=0
 zip_overwrite=0
 config_file="$SCRIPT_DIR/dropbox.toml"
 dry_run=0
+list_only=0
 exclude_patterns=()
 git_excludes=()
 backup_folder_name="echolab_backups"
@@ -64,6 +66,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       dry_run=1
+      shift
+      ;;
+    --list-only)
+      list_only=1
       shift
       ;;
     -h|--help)
@@ -153,6 +159,41 @@ queue_nested_git_repos() {
   done
 }
 
+should_exclude_file() {
+  local rel="$1"
+
+  for tracked in "${git_excludes[@]}"; do
+    if [[ "$rel" == "$tracked" || "$rel" == "$tracked/"* ]]; then
+      return 0
+    fi
+  done
+
+  for pattern in "${exclude_patterns[@]}"; do
+    if [[ "$rel" == $pattern ]]; then
+      return 0
+    fi
+  done
+
+  for repo_root in "${nested_git_roots[@]}"; do
+    if [[ "$rel" == "$repo_root/.git" || "$rel" == "$repo_root/.git/"* ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+collect_candidate_files() {
+  local root="$1"
+  if [[ -f "$root" ]]; then
+    printf "%s\n" "$root"
+    return
+  fi
+  if [[ -d "$root" ]]; then
+    find "$root" -type d -name .git -prune -o -type f -print
+  fi
+}
+
 ensure_clean_git
 load_git_tracked_excludes
 detect_nested_git_repos
@@ -235,6 +276,25 @@ if [[ "${#nested_git_roots[@]}" -gt 0 ]]; then
   done
 else
   echo "Nested git repos detected: 0"
+fi
+
+if [[ "$list_only" -eq 1 ]]; then
+  echo "Scheduled files:"
+  if [[ "$whole_project" -eq 1 ]]; then
+    while IFS= read -r f; do
+      rel="${f#./}"
+      should_exclude_file "$rel" && continue
+      echo "$rel"
+    done < <(find . -type d \( -name .git -o -name target \) -prune -o -type f -print | sort)
+  else
+    for item in "${existing[@]}"; do
+      while IFS= read -r f; do
+        should_exclude_file "$f" && continue
+        echo "$f"
+      done < <(collect_candidate_files "$item" | sort)
+    done
+  fi
+  exit 0
 fi
 
 if [[ "$dry_run" -eq 1 ]]; then
