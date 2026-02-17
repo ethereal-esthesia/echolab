@@ -103,6 +103,8 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
+- `./push.sh [options]`: generic push wrapper for git + Dropbox non-code sync.
+- `./pull.sh [options]`: generic pull wrapper for git + Dropbox non-code sync.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh [--dest PATH] [--state-dir DIR] [--remote-compare] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
 - `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-dir DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files.
@@ -184,6 +186,12 @@ Upload scheduled non-code files individually (incremental, path-preserving):
 ./sync_to_dropbox.sh --dest /echolab_sync/noncode
 ```
 
+Run git push + Dropbox non-code push together:
+
+```bash
+./push.sh --dropbox-dest /echolab_sync/noncode
+```
+
 Use Dropbox metadata timestamps instead of local state files:
 
 ```bash
@@ -200,6 +208,12 @@ Pull non-code files from Dropbox (revision-aware incremental download):
 
 ```bash
 ./sync_to_dropbox.sh --pull --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
+```
+
+Run git pull + Dropbox non-code pull together:
+
+```bash
+./pull.sh --dropbox-src /echolab_sync/noncode --dropbox-dest /Users/shane/Project/echolab
 ```
 
 Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
