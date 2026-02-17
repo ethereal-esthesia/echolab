@@ -221,10 +221,12 @@ for rel in "${rel_files[@]}"; do
     last_checked=0
     last_size=0
     last_hash=""
+    state_has_extended=0
     if [[ -f "$state_file" ]]; then
       state_raw="$(cat "$state_file" || true)"
       if [[ "$state_raw" == *$'\t'* ]]; then
         IFS=$'\t' read -r last_checked last_size last_hash <<< "$state_raw"
+        state_has_extended=1
       else
         last_checked="$state_raw"
       fi
@@ -238,9 +240,15 @@ for rel in "${rel_files[@]}"; do
       source_size="$(stat -c %s "$abs")"
     fi
 
-    if (( source_mtime <= last_checked )) && (( source_size == last_size )); then
-      skipped=$((skipped + 1))
-      continue
+    if (( source_mtime <= last_checked )); then
+      if [[ "$state_has_extended" -eq 0 ]]; then
+        skipped=$((skipped + 1))
+        continue
+      fi
+      if (( source_size == last_size )); then
+        skipped=$((skipped + 1))
+        continue
+      fi
     fi
 
     # If mtimes changed externally, avoid re-upload by comparing stored content hash.
