@@ -105,6 +105,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./clean.sh`: remove build artifacts.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh [--dest PATH] [--state-dir DIR] [--remote-compare] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
+- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-dir DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files.
 - `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--remote-compare] [--dry-run]`: direct non-code sync script (same behavior as `sync_to_dropbox.sh`).
 - `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using revision+timestamp checks.
 
@@ -198,7 +199,7 @@ Default local mode is content-aware:
 Pull non-code files from Dropbox (revision-aware incremental download):
 
 ```bash
-./pull_noncode_from_dropbox.sh --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
+./sync_to_dropbox.sh --pull --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
 ```
 
 Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
