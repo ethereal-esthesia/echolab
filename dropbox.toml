@@ -15,6 +15,7 @@ backup_folder_name = "echolab_backups"
 [exclude]
 # Wildcard patterns excluded from backup archives.
 target = "target/*"
+archive = "archive/*"
 env = ".env*"
 pem = "*.pem"
 keys = "*.key"
