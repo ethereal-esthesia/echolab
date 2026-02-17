@@ -105,6 +105,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./clean.sh`: remove build artifacts.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh --source FILE [--dest PATH] [--name FILENAME] [--config FILE]`: upload one file via Dropbox API only if source is newer than last check.
+- `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
 
 ## Secret Scanning
 
@@ -185,6 +186,12 @@ Use a custom Dropbox destination path:
 
 ```bash
 ./sync_to_dropbox.sh --source /path/to/echolab_latest.zip --dest /echolab_sync
+```
+
+Upload scheduled non-code files individually (incremental, path-preserving):
+
+```bash
+./sync_noncode_to_dropbox.sh --dest /echolab_sync/noncode
 ```
 
 Configure Dropbox sync defaults and token environment key in:
