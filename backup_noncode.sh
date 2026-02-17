@@ -253,6 +253,8 @@ collect_project_files() {
         -type f -print
     fi
   done < <(collect_project_scan_roots "$repo_root")
+
+  return 0
 }
 
 direct_child_repos() {
