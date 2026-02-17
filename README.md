@@ -103,7 +103,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
-- `./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: backup to Dropbox (auto-detected) or custom destination; fails if git is not clean and excludes all git-tracked files.
+- `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: backup to Dropbox (auto-detected) or custom destination; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh --source FILE [--dest DIR] [--name FILENAME] [--config FILE]`: copy one file only if source is newer than last check.
 
 ## Secret Scanning
@@ -142,6 +142,7 @@ Show only the files scheduled for backup (no archive written):
 - Applies extra wildcard excludes from `[exclude]` in `dropbox.toml`.
 - Prints each archived file by default.
 - Detects nested git repositories, excludes their `.git/` folders, and writes a queue file at `.backup_state/nested_git_repos.queue`.
+- Default candidate paths include `archive/`; control inclusion via `[exclude]` in `dropbox.toml`.
 
 Preview included paths without writing an archive:
 
@@ -153,12 +154,6 @@ Use a custom destination:
 
 ```bash
 ./backup_noncode.sh --dest /path/to/backups
-```
-
-Include `archive/` in the backup (off by default):
-
-```bash
-./backup_noncode.sh --include-archive
 ```
 
 Backup the whole project folder (excluding `.git/` and `target/`):

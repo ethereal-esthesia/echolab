@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_noncode.sh [--dest DIR] [--include-archive] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
+Usage: ./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
 Backups exclude all git-tracked files and require a clean git working tree.
@@ -17,7 +17,6 @@ Options:
                         1) ~/Library/CloudStorage/Dropbox
                         2) ~/Dropbox
                       Then uses "<dropbox>/<backup_folder_name>" from config.
-  --include-archive   Include ./archive in backup (off by default).
   --whole-project     Backup the whole project folder (excludes .git and target).
   --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
   --config FILE       Dropbox config file path (default: ./dropbox.toml).
@@ -28,7 +27,6 @@ EOF
 }
 
 dest_root=""
-include_archive=0
 whole_project=0
 zip_overwrite=0
 config_file="$SCRIPT_DIR/dropbox.toml"
@@ -46,10 +44,6 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { echo "error: --dest requires a path" >&2; exit 2; }
       dest_root="$2"
       shift 2
-      ;;
-    --include-archive)
-      include_archive=1
-      shift
       ;;
     --whole-project)
       whole_project=1
@@ -238,11 +232,8 @@ else
     "assets/roms"
     "screenshots"
     "echolab.toml"
+    "archive"
   )
-
-  if [[ "$include_archive" -eq 1 ]]; then
-    items+=("archive")
-  fi
 
   existing=()
   for item in "${items[@]}"; do
