@@ -112,7 +112,10 @@ fi
 mkdir -p "$state_dir"
 
 list_output="$(./backup_noncode.sh --list-only --config "$config_file" --dest /tmp/echolab_backups)"
-mapfile -t rel_files < <(printf "%s\n" "$list_output" | sed -n 's/^  \[[^]]*\] \(.*\)$/\1/p')
+rel_files=()
+while IFS= read -r rel; do
+  [[ -n "$rel" ]] && rel_files+=("$rel")
+done < <(printf "%s\n" "$list_output" | sed -n 's/^  \[[^]]*\] \(.*\)$/\1/p')
 
 if [[ "${#rel_files[@]}" -eq 0 ]]; then
   echo "No scheduled files found."
