@@ -134,6 +134,7 @@ Create a backup archive of non-code assets to Dropbox (auto-detected):
 - Requires a clean git working tree.
 - Excludes every git-tracked path from backup output.
 - Applies extra wildcard excludes from `[exclude]` in `dropbox.toml`.
+- Prints each archived file by default.
 
 Preview included paths without writing an archive:
 

@@ -226,7 +226,7 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
     for pattern in "${exclude_patterns[@]}"; do
       zip_excludes+=("$pattern")
     done
-    zip -qry "$out_file" . -x "${zip_excludes[@]}"
+    zip -ry "$out_file" . -x "${zip_excludes[@]}"
   else
     zip_excludes=()
     for tracked in "${git_excludes[@]}"; do
@@ -236,12 +236,12 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
       zip_excludes+=("$pattern")
     done
     if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
-      zip -qry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
+      zip -ry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
     else
       if [[ "${#zip_excludes[@]}" -gt 0 ]]; then
-        zip -qry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
+        zip -ry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
       else
-        zip -qry "$out_file" "${existing[@]}"
+        zip -ry "$out_file" "${existing[@]}"
       fi
     fi
   fi
@@ -255,9 +255,9 @@ else
     tar_excludes+=(--exclude="$pattern")
   done
   if [[ "$whole_project" -eq 1 ]]; then
-    tar -czf "$out_file" --exclude=.git --exclude=target "${tar_excludes[@]}" .
+    tar -czvf "$out_file" --exclude=.git --exclude=target "${tar_excludes[@]}" .
   else
-    tar -czf "$out_file" "${tar_excludes[@]}" "${existing[@]}"
+    tar -czvf "$out_file" "${tar_excludes[@]}" "${existing[@]}"
   fi
 fi
 
