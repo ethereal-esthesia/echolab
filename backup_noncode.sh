@@ -284,6 +284,7 @@ direct_child_repos() {
 
 crawl_project_recursive() {
   local repo_root="$1"
+  local children
   local child
   local rel
   echo "Project run: $repo_root"
@@ -294,10 +295,15 @@ crawl_project_recursive() {
     print_scheduled_file "$rel"
   done < <(collect_project_files "$repo_root" | sort -u)
 
-  while IFS= read -r child; do
-    [[ -n "$child" ]] || continue
-    crawl_project_recursive "$child"
-  done < <(direct_child_repos "$repo_root")
+  children="$(direct_child_repos "$repo_root" || true)"
+  if [[ -n "$children" ]]; then
+    while IFS= read -r child; do
+      [[ -n "$child" ]] || continue
+      crawl_project_recursive "$child"
+    done <<< "$children"
+  fi
+
+  return 0
 }
 
 should_exclude_file() {
