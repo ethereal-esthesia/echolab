@@ -22,6 +22,8 @@ Options:
   --dest DIR        Local destination root directory (default: repo root).
   --config FILE     Config file path (default: ./dropbox.toml).
   --state-dir DIR   Pull state directory (default: .backup_state/dropbox_pull_noncode).
+                    Also updates push state files in .backup_state/dropbox_sync_noncode
+                    so unchanged pulled files are not re-uploaded.
   --dry-run         Show what would download without writing files.
   -h, --help        Show help.
 USAGE
@@ -31,6 +33,7 @@ src_root=""
 dest_root="$SCRIPT_DIR"
 config_file="$SCRIPT_DIR/dropbox.toml"
 state_dir="$SCRIPT_DIR/.backup_state/dropbox_pull_noncode"
+sync_state_dir="$SCRIPT_DIR/.backup_state/dropbox_sync_noncode"
 dry_run=0
 sync_folder_name="echolab_sync"
 token_env_name="DROPBOX_ACCESS_TOKEN"
@@ -106,6 +109,33 @@ iso_to_epoch() {
   echo 0
 }
 
+file_sha1() {
+  local path="$1"
+  shasum -a 1 "$path" | awk '{print $1}'
+}
+
+write_push_state_from_local() {
+  local rel="$1"
+  local local_abs="$2"
+  [[ -f "$local_abs" ]] || return 0
+
+  local mtime size hash key out
+  if stat -f %m "$local_abs" >/dev/null 2>&1; then
+    mtime="$(stat -f %m "$local_abs")"
+  else
+    mtime="$(stat -c %Y "$local_abs")"
+  fi
+  if stat -f %z "$local_abs" >/dev/null 2>&1; then
+    size="$(stat -f %z "$local_abs")"
+  else
+    size="$(stat -c %s "$local_abs")"
+  fi
+  hash="$(file_sha1 "$local_abs")"
+  key="$(printf "%s" "$rel" | shasum -a 1 | awk '{print $1}')"
+  out="$sync_state_dir/${key}.state"
+  printf "%s\t%s\t%s\n" "$mtime" "$size" "$hash" > "$out"
+}
+
 if [[ -f "$config_file" ]]; then
   token_env_name_cfg="$(parse_toml_string "token_env" "$config_file" || true)"
   [[ -n "${token_env_name_cfg:-}" ]] && token_env_name="$token_env_name_cfg"
@@ -138,6 +168,7 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 mkdir -p "$state_dir"
+mkdir -p "$sync_state_dir"
 mkdir -p "$dest_root"
 
 list_tmp="$(mktemp)"
@@ -235,6 +266,9 @@ while IFS=$'\t' read -r path_display rev server_modified; do
 
   if [[ -f "$local_abs" && -n "$last_rev" && "$last_rev" == "$rev" ]]; then
     printf "%s %s\n" "$rev" "$remote_epoch" > "$state_file"
+    if [[ "$dry_run" -eq 0 ]]; then
+      write_push_state_from_local "$rel" "$local_abs"
+    fi
     skipped=$((skipped + 1))
     continue
   fi
@@ -247,6 +281,9 @@ while IFS=$'\t' read -r path_display rev server_modified; do
     fi
     if (( remote_epoch > 0 && local_mtime >= remote_epoch )); then
       printf "%s %s\n" "$rev" "$remote_epoch" > "$state_file"
+      if [[ "$dry_run" -eq 0 ]]; then
+        write_push_state_from_local "$rel" "$local_abs"
+      fi
       skipped=$((skipped + 1))
       continue
     fi
@@ -266,6 +303,7 @@ while IFS=$'\t' read -r path_display rev server_modified; do
     --header "Dropbox-API-Arg: $api_arg" \
     -o "$local_abs"; then
     printf "%s %s\n" "$rev" "$remote_epoch" > "$state_file"
+    write_push_state_from_local "$rel" "$local_abs"
     downloaded=$((downloaded + 1))
   else
     echo "error: download failed for $path_display" >&2

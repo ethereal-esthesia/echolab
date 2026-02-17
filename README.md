@@ -213,6 +213,8 @@ Pull non-code files from Dropbox (revision-aware incremental download):
 ./pull_noncode_from_dropbox.sh --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
 ```
 
+Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
+
 Configure Dropbox sync defaults and token environment key in:
 
 ```bash
