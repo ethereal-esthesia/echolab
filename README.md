@@ -202,6 +202,10 @@ Use Dropbox metadata timestamps instead of local state files:
 
 `--remote-compare` still updates local per-file state on successful uploads, so follow-up default runs skip unchanged files.
 
+Default local mode is content-aware:
+- Fast path: skip when `mtime` and file size are unchanged.
+- Fallback: if timestamps drift, compare stored content hash and skip if bytes are identical.
+
 Configure Dropbox sync defaults and token environment key in:
 
 ```bash

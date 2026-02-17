@@ -9,7 +9,7 @@ usage() {
 Usage: ./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-dir DIR] [--remote-compare] [--dry-run]
 
 Uploads scheduled non-code files individually to Dropbox API, preserving relative paths.
-Only uploads files newer than each file's last recorded sync timestamp.
+Only uploads files that changed since last sync (timestamp + content-aware fallback).
 
 Options:
   --dest PATH       Dropbox destination root (default: /<sync_folder_name>).
@@ -126,6 +126,11 @@ dropbox_remote_mtime_epoch() {
   iso_to_epoch "$server_modified"
 }
 
+file_sha1() {
+  local path="$1"
+  shasum -a 1 "$path" | awk '{print $1}'
+}
+
 if [[ -f "$config_file" ]]; then
   token_env_name_cfg="$(parse_toml_string "token_env" "$config_file" || true)"
   [[ -n "${token_env_name_cfg:-}" ]] && token_env_name="$token_env_name_cfg"
@@ -214,14 +219,38 @@ for rel in "${rel_files[@]}"; do
     fi
   else
     last_checked=0
+    last_size=0
+    last_hash=""
     if [[ -f "$state_file" ]]; then
-      read -r last_checked < "$state_file" || true
+      state_raw="$(cat "$state_file" || true)"
+      if [[ "$state_raw" == *$'\t'* ]]; then
+        IFS=$'\t' read -r last_checked last_size last_hash <<< "$state_raw"
+      else
+        last_checked="$state_raw"
+      fi
       [[ "$last_checked" =~ ^[0-9]+$ ]] || last_checked=0
+      [[ "$last_size" =~ ^[0-9]+$ ]] || last_size=0
     fi
 
-    if (( source_mtime <= last_checked )); then
+    if stat -f %z "$abs" >/dev/null 2>&1; then
+      source_size="$(stat -f %z "$abs")"
+    else
+      source_size="$(stat -c %s "$abs")"
+    fi
+
+    if (( source_mtime <= last_checked )) && (( source_size == last_size )); then
       skipped=$((skipped + 1))
       continue
+    fi
+
+    # If mtimes changed externally, avoid re-upload by comparing stored content hash.
+    if [[ -n "$last_hash" ]]; then
+      source_hash="$(file_sha1 "$abs")"
+      if [[ "$source_hash" == "$last_hash" ]]; then
+        printf "%s\t%s\t%s\n" "$source_mtime" "$source_size" "$source_hash" > "$state_file"
+        skipped=$((skipped + 1))
+        continue
+      fi
     fi
   fi
 
@@ -238,7 +267,13 @@ for rel in "${rel_files[@]}"; do
     --header "Dropbox-API-Arg: $api_arg" \
     --header "Content-Type: application/octet-stream" \
     --data-binary @"$abs" >/dev/null; then
-    printf "%s\n" "$source_mtime" > "$state_file"
+    if stat -f %z "$abs" >/dev/null 2>&1; then
+      source_size="$(stat -f %z "$abs")"
+    else
+      source_size="$(stat -c %s "$abs")"
+    fi
+    source_hash="$(file_sha1 "$abs")"
+    printf "%s\t%s\t%s\n" "$source_mtime" "$source_size" "$source_hash" > "$state_file"
     uploaded=$((uploaded + 1))
   else
     echo "error: upload failed for $rel" >&2
