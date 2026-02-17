@@ -257,36 +257,8 @@ collect_project_files() {
   return 0
 }
 
-direct_child_repos() {
+run_project_list_only() {
   local repo_root="$1"
-  local candidate
-  local parent
-  local best_parent
-  local p
-
-  for candidate in "${git_projects[@]}"; do
-    [[ "$candidate" == "." || "$candidate" == "$repo_root" ]] && continue
-
-    best_parent="."
-    for p in "${git_projects[@]}"; do
-      [[ "$p" == "." || "$p" == "$candidate" ]] && continue
-      path_is_under "$candidate" "$p" || continue
-
-      if [[ "$best_parent" == "." || "${#p}" -gt "${#best_parent}" ]]; then
-        best_parent="$p"
-      fi
-    done
-
-    if [[ "$best_parent" == "$repo_root" ]]; then
-      echo "$candidate"
-    fi
-  done | sort
-}
-
-crawl_project_recursive() {
-  local repo_root="$1"
-  local children
-  local child
   local rel
   echo "Project run: $repo_root"
 
@@ -295,14 +267,6 @@ crawl_project_recursive() {
     should_exclude_file "$rel" && continue
     print_scheduled_file "$rel"
   done < <(collect_project_files "$repo_root" | sort -u)
-
-  children="$(direct_child_repos "$repo_root" || true)"
-  if [[ -n "$children" ]]; then
-    while IFS= read -r child; do
-      [[ -n "$child" ]] || continue
-      crawl_project_recursive "$child"
-    done <<< "$children"
-  fi
 
   return 0
 }
@@ -460,7 +424,9 @@ fi
 
 if [[ "$list_only" -eq 1 ]]; then
   echo "Scheduled files:"
-  crawl_project_recursive "."
+  for repo_root in "${git_projects[@]}"; do
+    run_project_list_only "$repo_root"
+  done
   exit 0
 fi
 
