@@ -200,6 +200,8 @@ Use Dropbox metadata timestamps instead of local state files:
 ./sync_noncode_to_dropbox.sh --dest /echolab_sync/noncode --remote-compare
 ```
 
+`--remote-compare` still updates local per-file state on successful uploads, so follow-up default runs skip unchanged files.
+
 Configure Dropbox sync defaults and token environment key in:
 
 ```bash

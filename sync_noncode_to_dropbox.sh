@@ -198,6 +198,8 @@ for rel in "${rel_files[@]}"; do
     source_mtime="$(stat -c %Y "$abs")"
   fi
 
+  source_key="$(printf "%s" "$rel" | shasum -a 1 | awk '{print $1}')"
+  state_file="$state_dir/${source_key}.state"
   dropbox_path="${dest_root%/}/$rel"
 
   if [[ "$remote_compare" -eq 1 ]]; then
@@ -211,9 +213,6 @@ for rel in "${rel_files[@]}"; do
       continue
     fi
   else
-    source_key="$(printf "%s" "$rel" | shasum -a 1 | awk '{print $1}')"
-    state_file="$state_dir/${source_key}.state"
-
     last_checked=0
     if [[ -f "$state_file" ]]; then
       read -r last_checked < "$state_file" || true
@@ -239,9 +238,7 @@ for rel in "${rel_files[@]}"; do
     --header "Dropbox-API-Arg: $api_arg" \
     --header "Content-Type: application/octet-stream" \
     --data-binary @"$abs" >/dev/null; then
-    if [[ "$remote_compare" -eq 0 ]]; then
-      printf "%s\n" "$source_mtime" > "$state_file"
-    fi
+    printf "%s\n" "$source_mtime" > "$state_file"
     uploaded=$((uploaded + 1))
   else
     echo "error: upload failed for $rel" >&2
