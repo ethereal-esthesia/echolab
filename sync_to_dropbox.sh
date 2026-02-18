@@ -49,11 +49,6 @@ while [[ $# -gt 0 ]]; do
       delegated_args+=("$1")
       shift
       ;;
-    --source|--name|--state|--allow-tracked)
-      echo "error: $1 is no longer supported; non-git sync is mandatory." >&2
-      usage
-      exit 2
-      ;;
     -h|--help)
       usage
       exit 0
