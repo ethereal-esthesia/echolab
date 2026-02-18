@@ -18,8 +18,7 @@ Options:
   --git-remote NAME     Git remote (default: origin).
   --git-branch NAME     Git branch (default: current branch).
   --dropbox-path PATH   Dropbox root path for non-code push.
-  --state-dir DIR       State dir for non-code push.
-  --remote-compare      Dropbox push: compare against remote timestamps.
+  --state-file FILE     Shared local sync timestamp file.
   --config FILE         Dropbox config file path.
   --yes                 Skip Dropbox y/N confirmation prompt.
   --dry-run             Print actions; Dropbox side runs in --dry-run mode.
@@ -32,9 +31,8 @@ run_dropbox=1
 git_remote="origin"
 git_branch=""
 dropbox_dest=""
-state_dir=""
+state_file=""
 config_file=""
-remote_compare=0
 assume_yes=0
 dry_run=0
 
@@ -65,19 +63,15 @@ while [[ $# -gt 0 ]]; do
       dropbox_dest="$2"
       shift 2
       ;;
-    --state-dir)
-      [[ $# -ge 2 ]] || { echo "error: --state-dir requires a value" >&2; exit 2; }
-      state_dir="$2"
+    --state-file)
+      [[ $# -ge 2 ]] || { echo "error: --state-file requires a value" >&2; exit 2; }
+      state_file="$2"
       shift 2
       ;;
     --config)
       [[ $# -ge 2 ]] || { echo "error: --config requires a value" >&2; exit 2; }
       config_file="$2"
       shift 2
-      ;;
-    --remote-compare)
-      remote_compare=1
-      shift
       ;;
     --dry-run)
       dry_run=1
@@ -123,15 +117,13 @@ fi
 if [[ "$run_dropbox" -eq 1 ]]; then
   dropbox_cmd=(./sync_to_dropbox.sh)
   [[ -n "$dropbox_dest" ]] && dropbox_cmd+=(--dest "$dropbox_dest")
-  [[ -n "$state_dir" ]] && dropbox_cmd+=(--state-dir "$state_dir")
+  [[ -n "$state_file" ]] && dropbox_cmd+=(--state-file "$state_file")
   [[ -n "$config_file" ]] && dropbox_cmd+=(--config "$config_file")
-  [[ "$remote_compare" -eq 1 ]] && dropbox_cmd+=(--remote-compare)
 
   preview_cmd=(./sync_to_dropbox.sh --dry-run)
   [[ -n "$dropbox_dest" ]] && preview_cmd+=(--dest "$dropbox_dest")
-  [[ -n "$state_dir" ]] && preview_cmd+=(--state-dir "$state_dir")
+  [[ -n "$state_file" ]] && preview_cmd+=(--state-file "$state_file")
   [[ -n "$config_file" ]] && preview_cmd+=(--config "$config_file")
-  [[ "$remote_compare" -eq 1 ]] && preview_cmd+=(--remote-compare)
   echo "[dropbox] preview: ${preview_cmd[*]}"
   preview_output="$("${preview_cmd[@]}")"
   printf "%s\n" "$preview_output" | sed -n '/^upload: /p'

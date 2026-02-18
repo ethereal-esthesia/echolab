@@ -106,9 +106,9 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./push.sh [options]`: generic push wrapper for git + Dropbox non-code sync.
 - `./pull.sh [options]`: generic pull wrapper for git + Dropbox non-code sync.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
-- `./sync_to_dropbox.sh [--dest PATH] [--state-dir DIR] [--remote-compare] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
-- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-dir DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files.
-- `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--remote-compare] [--dry-run]`: direct non-code sync script (same behavior as `sync_to_dropbox.sh`).
+- `./sync_to_dropbox.sh [--dest PATH] [--state-file FILE] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API using one shared local sync timestamp.
+- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API by comparing remote timestamps to local file timestamps.
+- `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]`: direct non-code push script (same behavior as `sync_to_dropbox.sh` push mode).
 - `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using remote timestamp comparison.
 
 ## Secret Scanning
@@ -194,17 +194,9 @@ Run git push + Dropbox non-code push together:
 
 `push.sh` always previews Dropbox changes (`upload:` list) first, then prompts `y/N` unless `--yes` is set.
 
-Use Dropbox metadata timestamps instead of local state files:
-
-```bash
-./sync_to_dropbox.sh --dest /echolab_sync --remote-compare
-```
-
-`--remote-compare` still updates local per-file state on successful uploads, so follow-up default runs skip unchanged files.
-
-Default local mode is content-aware:
-- Fast path: skip when `mtime` and file size are unchanged.
-- Fallback: if timestamps drift, compare stored content hash and skip if bytes are identical.
+By default, push uses one shared local timestamp file:
+- `.backup_state/dropbox_last_sync_time`
+Override with `--state-file /path/to/file`.
 
 Pull non-code files from Dropbox (remote-timestamp validated):
 
@@ -222,8 +214,6 @@ Run git pull + Dropbox non-code pull together:
 Both wrappers use `--dropbox-path` for the remote Dropbox path.
 
 Pull default source now follows `default_sync_dir` in `dropbox.toml` (same default path used by push). If `default_sync_dir` is empty, pull falls back to `/<sync_folder_name>`.
-
-Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
 
 Configure Dropbox sync defaults and token environment key in:
 

@@ -20,7 +20,7 @@ Options:
   --rebase              Use git pull --rebase (default is --ff-only).
   --dropbox-path PATH   Dropbox root path for non-code pull.
   --dropbox-dest DIR    Local destination root for non-code pull.
-  --state-dir DIR       State dir for non-code pull.
+  --state-file FILE     Shared local sync timestamp file.
   --config FILE         Dropbox config file path.
   --yes                 Skip Dropbox y/N confirmation prompt.
   --dry-run             Print actions; Dropbox side runs in --dry-run mode.
@@ -35,7 +35,7 @@ git_branch=""
 git_rebase=0
 dropbox_src=""
 dropbox_dest=""
-state_dir=""
+state_file=""
 config_file=""
 assume_yes=0
 dry_run=0
@@ -76,9 +76,9 @@ while [[ $# -gt 0 ]]; do
       dropbox_dest="$2"
       shift 2
       ;;
-    --state-dir)
-      [[ $# -ge 2 ]] || { echo "error: --state-dir requires a value" >&2; exit 2; }
-      state_dir="$2"
+    --state-file)
+      [[ $# -ge 2 ]] || { echo "error: --state-file requires a value" >&2; exit 2; }
+      state_file="$2"
       shift 2
       ;;
     --config)
@@ -127,12 +127,12 @@ if [[ "$run_dropbox" -eq 1 ]]; then
   dropbox_args=(--pull)
   [[ -n "$dropbox_src" ]] && dropbox_args+=(--src "$dropbox_src")
   [[ -n "$dropbox_dest" ]] && dropbox_args+=(--dest "$dropbox_dest")
-  [[ -n "$state_dir" ]] && dropbox_args+=(--state-dir "$state_dir")
+  [[ -n "$state_file" ]] && dropbox_args+=(--state-file "$state_file")
   [[ -n "$config_file" ]] && dropbox_args+=(--config "$config_file")
   preview_args=(--pull --dry-run)
   [[ -n "$dropbox_src" ]] && preview_args+=(--src "$dropbox_src")
   [[ -n "$dropbox_dest" ]] && preview_args+=(--dest "$dropbox_dest")
-  [[ -n "$state_dir" ]] && preview_args+=(--state-dir "$state_dir")
+  [[ -n "$state_file" ]] && preview_args+=(--state-file "$state_file")
   [[ -n "$config_file" ]] && preview_args+=(--config "$config_file")
   echo "[dropbox] preview: ./sync_to_dropbox.sh ${preview_args[*]}"
   preview_output="$(./sync_to_dropbox.sh "${preview_args[@]}")"
