@@ -220,6 +220,8 @@ Run git pull + Dropbox non-code pull together:
 
 `pull.sh` always previews Dropbox changes (`download:` list) first, then prompts `y/N` unless `--yes` is set.
 
+Pull default source now follows `default_sync_dir` in `dropbox.toml` (same default path used by push). If `default_sync_dir` is empty, pull falls back to `/<sync_folder_name>/noncode`.
+
 Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
 
 Configure Dropbox sync defaults and token environment key in:

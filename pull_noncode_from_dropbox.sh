@@ -141,6 +141,10 @@ if [[ -f "$config_file" ]]; then
   [[ -n "${token_env_name_cfg:-}" ]] && token_env_name="$token_env_name_cfg"
   sync_folder_name_cfg="$(parse_toml_string "sync_folder_name" "$config_file" || true)"
   [[ -n "${sync_folder_name_cfg:-}" ]] && sync_folder_name="$sync_folder_name_cfg"
+  if [[ -z "$src_root" ]]; then
+    configured_src="$(parse_toml_string "default_sync_dir" "$config_file" || true)"
+    [[ -n "${configured_src:-}" ]] && src_root="$configured_src"
+  fi
 fi
 
 if [[ -z "$src_root" ]]; then
