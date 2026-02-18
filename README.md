@@ -105,7 +105,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./clean.sh`: remove build artifacts.
 - `./push.sh [options]`: generic push wrapper for git + Dropbox non-code sync.
 - `./pull.sh [options]`: generic pull wrapper for git + Dropbox non-code sync.
-- `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
+- `./backup_non_git.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh [--dest PATH] [--state-file FILE] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API using one shared local sync timestamp.
 - `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API by comparing remote timestamps to one shared local last-sync timestamp.
 - `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]`: direct non-code push script (same behavior as `sync_to_dropbox.sh` push mode).
@@ -156,16 +156,16 @@ If token is missing, `push.sh` / `pull.sh` will warn and skip only the Dropbox s
 Create a backup archive of non-code assets locally:
 
 ```bash
-./backup_noncode.sh
+./backup_non_git.sh
 ```
 
 Show only the files scheduled for backup (no archive written, with per-file sizes):
 
 ```bash
-./backup_noncode.sh --list-only
+./backup_non_git.sh --list-only
 ```
 
-`backup_noncode.sh` safety rules:
+`backup_non_git.sh` safety rules:
 - Requires a clean git working tree.
 - Excludes every git-tracked path from backup output.
 - Applies extra wildcard excludes from `[exclude]` in `dropbox.toml`.
@@ -177,31 +177,31 @@ Show only the files scheduled for backup (no archive written, with per-file size
 Preview included paths without writing an archive:
 
 ```bash
-./backup_noncode.sh --dry-run
+./backup_non_git.sh --dry-run
 ```
 
 Use a custom destination:
 
 ```bash
-./backup_noncode.sh --dest /path/to/backups
+./backup_non_git.sh --dest /path/to/backups
 ```
 
 Backup the whole project folder (excluding `.git/` and `target/`):
 
 ```bash
-./backup_noncode.sh --whole-project
+./backup_non_git.sh --whole-project
 ```
 
 Create a single zip that always overwrites the previous one:
 
 ```bash
-./backup_noncode.sh --whole-project --zip-overwrite
+./backup_non_git.sh --whole-project --zip-overwrite
 ```
 
 Use a custom config file:
 
 ```bash
-./backup_noncode.sh --whole-project --zip-overwrite --config /path/to/dropbox.toml
+./backup_non_git.sh --whole-project --zip-overwrite --config /path/to/dropbox.toml
 ```
 
 Upload scheduled non-code files individually (incremental, path-preserving):

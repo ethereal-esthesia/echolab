@@ -127,7 +127,7 @@ if [[ -f "$state_file" ]]; then
   [[ "$last_sync_ts" =~ ^[0-9]+$ ]] || last_sync_ts=0
 fi
 
-list_output="$(./backup_noncode.sh --list-only --config "$config_file" --dest /tmp/echolab_backups)"
+list_output="$(./backup_non_git.sh --list-only --config "$config_file" --dest /tmp/echolab_backups)"
 rel_files=()
 while IFS= read -r rel; do
   [[ -n "$rel" ]] && rel_files+=("$rel")

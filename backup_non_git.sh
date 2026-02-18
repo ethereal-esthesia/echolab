@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
+Usage: ./backup_non_git.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
 
 Creates a timestamped .tar.gz backup of non-code project assets.
 Backups exclude all git-tracked files and require a clean git working tree.
@@ -118,7 +118,7 @@ parse_exclude_patterns() {
 
 ensure_clean_git() {
   if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    echo "error: backup_noncode.sh must run inside a git repository." >&2
+    echo "error: backup_non_git.sh must run inside a git repository." >&2
     exit 1
   fi
 
