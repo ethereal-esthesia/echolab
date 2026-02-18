@@ -8,7 +8,7 @@ usage() {
   cat <<'EOF'
 Usage: ./backup_non_git.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
 
-Creates a timestamped .tar.gz backup of non-code project assets.
+Creates a timestamped .tar.gz backup of non-git project assets.
 Backups exclude all git-tracked files and require a clean git working tree.
 
 Options:
@@ -474,7 +474,7 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
     fi
   fi
 else
-  out_file="$dest_root/echolab_noncode_${timestamp}.tar.gz"
+  out_file="$dest_root/echolab_non_git_${timestamp}.tar.gz"
   tar_excludes=()
   for repo_root in "${nested_git_roots[@]}"; do
     tar_excludes+=(--exclude="$repo_root/.git" --exclude="$repo_root/.git/*")

@@ -6,9 +6,9 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'USAGE'
-Usage: ./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]
+Usage: ./sync_non_git_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]
 
-Uploads scheduled non-code files individually to Dropbox API, preserving relative paths.
+Uploads scheduled non-git files individually to Dropbox API, preserving relative paths.
 Push decision uses one local sync timestamp file:
 - Upload when local file mtime > last_sync_ts from --state-file.
 

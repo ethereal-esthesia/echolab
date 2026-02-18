@@ -10,9 +10,9 @@ Usage:
   ./sync_to_dropbox.sh [--dest PATH] [--state-file FILE] [--config FILE] [--dry-run]
   ./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]
 
-Non-code sync wrapper.
-Push mode delegates to ./sync_noncode_to_dropbox.sh.
-Pull mode delegates to ./pull_noncode_from_dropbox.sh.
+Non-git sync wrapper.
+Push mode delegates to ./sync_non_git_to_dropbox.sh.
+Pull mode delegates to ./pull_non_git_from_dropbox.sh.
 
 Options:
   --pull            Run pull mode (Dropbox -> local).
@@ -49,12 +49,8 @@ while [[ $# -gt 0 ]]; do
       delegated_args+=("$1")
       shift
       ;;
-    --noncode)
-      # Backward-compatible no-op.
-      shift
-      ;;
     --source|--name|--state|--allow-tracked)
-      echo "error: $1 is no longer supported; non-code sync is mandatory." >&2
+      echo "error: $1 is no longer supported; non-git sync is mandatory." >&2
       usage
       exit 2
       ;;
@@ -72,11 +68,11 @@ done
 
 if [[ "$mode" == "pull" ]]; then
   if [[ -n "${delegated_args[*]-}" ]]; then
-    exec "$SCRIPT_DIR/pull_noncode_from_dropbox.sh" "${delegated_args[@]}"
+    exec "$SCRIPT_DIR/pull_non_git_from_dropbox.sh" "${delegated_args[@]}"
   fi
-  exec "$SCRIPT_DIR/pull_noncode_from_dropbox.sh"
+  exec "$SCRIPT_DIR/pull_non_git_from_dropbox.sh"
 fi
 if [[ -n "${delegated_args[*]-}" ]]; then
-  exec "$SCRIPT_DIR/sync_noncode_to_dropbox.sh" "${delegated_args[@]}"
+  exec "$SCRIPT_DIR/sync_non_git_to_dropbox.sh" "${delegated_args[@]}"
 fi
-exec "$SCRIPT_DIR/sync_noncode_to_dropbox.sh"
+exec "$SCRIPT_DIR/sync_non_git_to_dropbox.sh"
