@@ -134,7 +134,7 @@ if [[ "$run_dropbox" -eq 1 ]]; then
   [[ "$remote_compare" -eq 1 ]] && preview_cmd+=(--remote-compare)
   echo "[dropbox] preview: ${preview_cmd[*]}"
   preview_output="$("${preview_cmd[@]}")"
-  printf "%s\n" "$preview_output"
+  printf "%s\n" "$preview_output" | sed -n '/^upload: /p'
   changed_count="$(printf "%s\n" "$preview_output" | grep -c '^upload: ' || true)"
   if [[ "$changed_count" -eq 0 ]]; then
     echo "[dropbox] no file changes to push."

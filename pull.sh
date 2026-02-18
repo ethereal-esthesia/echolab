@@ -136,7 +136,7 @@ if [[ "$run_dropbox" -eq 1 ]]; then
   [[ -n "$config_file" ]] && preview_args+=(--config "$config_file")
   echo "[dropbox] preview: ./sync_to_dropbox.sh ${preview_args[*]}"
   preview_output="$(./sync_to_dropbox.sh "${preview_args[@]}")"
-  printf "%s\n" "$preview_output"
+  printf "%s\n" "$preview_output" | sed -n '/^download: /p'
   changed_count="$(printf "%s\n" "$preview_output" | grep -c '^download: ' || true)"
   if [[ "$changed_count" -eq 0 ]]; then
     echo "[dropbox] no file changes to pull."
