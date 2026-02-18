@@ -197,6 +197,7 @@ Run git push + Dropbox non-code push together:
 By default, push uses one shared local timestamp file:
 - `.backup_state/dropbox_last_sync_time`
 Override with `--state-file /path/to/file`.
+The timestamp is advanced from Dropbox upload metadata (`server_modified`) so pull comparisons align with remote clock.
 
 Pull non-code files from Dropbox (remote-timestamp validated):
 

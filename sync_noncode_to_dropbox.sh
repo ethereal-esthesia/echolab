@@ -77,6 +77,23 @@ parse_toml_string() {
   ' "$path"
 }
 
+iso_to_epoch() {
+  local iso="$1"
+  if [[ -z "$iso" ]]; then
+    echo 0
+    return 0
+  fi
+  if date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s >/dev/null 2>&1; then
+    date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s
+    return 0
+  fi
+  if date -u -d "$iso" +%s >/dev/null 2>&1; then
+    date -u -d "$iso" +%s
+    return 0
+  fi
+  echo 0
+}
+
 if [[ -f "$config_file" ]]; then
   token_env_name_cfg="$(parse_toml_string "token_env" "$config_file" || true)"
   [[ -n "${token_env_name_cfg:-}" ]] && token_env_name="$token_env_name_cfg"
@@ -130,6 +147,7 @@ echo "Candidate files: ${#rel_files[@]}"
 uploaded=0
 skipped=0
 failed=0
+new_last_sync_ts="$last_sync_ts"
 
 for rel in "${rel_files[@]}"; do
   abs="$SCRIPT_DIR/$rel"
@@ -169,6 +187,11 @@ for rel in "${rel_files[@]}"; do
       failed=$((failed + 1))
       continue
     fi
+    server_modified="$(printf "%s" "$upload_resp" | sed -n 's/.*"server_modified"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+    remote_epoch="$(iso_to_epoch "$server_modified")"
+    if (( remote_epoch > new_last_sync_ts )); then
+      new_last_sync_ts="$remote_epoch"
+    fi
     uploaded=$((uploaded + 1))
   else
     echo "error: upload failed for $rel" >&2
@@ -184,5 +207,9 @@ fi
 
 if [[ "$dry_run" -eq 0 ]]; then
   mkdir -p "$(dirname "$state_file")"
-  date +%s > "$state_file"
+  now_ts="$(date +%s)"
+  if (( now_ts > new_last_sync_ts )); then
+    new_last_sync_ts="$now_ts"
+  fi
+  printf "%s\n" "$new_last_sync_ts" > "$state_file"
 fi
