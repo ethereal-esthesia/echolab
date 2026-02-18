@@ -127,6 +127,30 @@ brew install gitleaks
 
 CI secret scanning also runs on push and pull requests via GitHub Actions (`.github/workflows/secret-scan.yml`).
 
+## Dropbox API Setup
+
+Create a Dropbox app/token in the Dropbox App Console, then set your token env var:
+
+```bash
+export DROPBOX_ACCESS_TOKEN="your_token_here"
+```
+
+Persist it for future shells (`zsh`):
+
+```bash
+echo 'export DROPBOX_ACCESS_TOKEN="your_token_here"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Quick check:
+
+```bash
+echo "$DROPBOX_ACCESS_TOKEN"
+./sync_to_dropbox.sh --dry-run
+```
+
+If token is missing, `push.sh` / `pull.sh` will warn and skip only the Dropbox step.
+
 ## Backup Non-Code Assets
 
 Create a backup archive of non-code assets locally:

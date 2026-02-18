@@ -36,6 +36,26 @@ config_file=""
 assume_yes=0
 dry_run=0
 
+resolve_token_env_name() {
+  local cfg="$1"
+  local key="DROPBOX_ACCESS_TOKEN"
+  if [[ -f "$cfg" ]]; then
+    parsed="$(awk -F '=' '
+      $1 ~ /^[[:space:]]*token_env[[:space:]]*$/ {
+        val = $2
+        sub(/^[[:space:]]*/, "", val)
+        sub(/[[:space:]]*#.*/, "", val)
+        gsub(/^"/, "", val)
+        gsub(/"$/, "", val)
+        print val
+        exit
+      }
+    ' "$cfg")"
+    [[ -n "${parsed:-}" ]] && key="$parsed"
+  fi
+  printf "%s\n" "$key"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --git-only)
@@ -92,6 +112,18 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$run_dropbox" -eq 1 ]]; then
+  cfg_path="$SCRIPT_DIR/dropbox.toml"
+  [[ -n "$config_file" ]] && cfg_path="$config_file"
+  token_key="$(resolve_token_env_name "$cfg_path")"
+  token_val="${!token_key:-}"
+  if [[ -z "$token_val" ]]; then
+    echo "warning: Dropbox token is not configured (env var '$token_key' is empty)." >&2
+    echo "warning: Skipping Dropbox push step. See README section 'Dropbox API Setup' for instructions." >&2
+    run_dropbox=0
+  fi
+fi
 
 if [[ "$run_dropbox" -eq 1 ]]; then
   if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
