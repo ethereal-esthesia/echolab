@@ -99,14 +99,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$run_git" -eq 1 ]]; then
-  if [[ -z "$git_branch" ]]; then
-    git_branch="$(git rev-parse --abbrev-ref HEAD)"
-  fi
-  echo "[git] push $git_remote $git_branch"
-  if [[ "$dry_run" -eq 0 ]]; then
-    git push "$git_remote" "$git_branch"
-  fi
+dropbox_will_run=0
+if [[ "$run_dropbox" -eq 1 ]]; then
+  dropbox_will_run=1
 fi
 
 if [[ "$run_dropbox" -eq 1 ]]; then
@@ -149,7 +144,19 @@ if [[ "$run_dropbox" -eq 1 ]]; then
       exit 2
     fi
   fi
+fi
 
+if [[ "$run_git" -eq 1 ]]; then
+  if [[ -z "$git_branch" ]]; then
+    git_branch="$(git rev-parse --abbrev-ref HEAD)"
+  fi
+  echo "[git] push $git_remote $git_branch"
+  if [[ "$dry_run" -eq 0 ]]; then
+    git push "$git_remote" "$git_branch"
+  fi
+fi
+
+if [[ "$dropbox_will_run" -eq 1 ]]; then
   echo "[dropbox] run: ./sync_to_dropbox.sh ${dropbox_args[*]}"
   ./sync_to_dropbox.sh "${dropbox_args[@]}"
 fi
