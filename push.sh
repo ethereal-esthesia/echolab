@@ -10,14 +10,14 @@ Usage: ./push.sh [options]
 
 Pushes both:
 1) git changes to remote
-2) non-git files to Dropbox via ./sync_to_dropbox.sh
+2) Dropbox asset files via ./sync_to_dropbox.sh
 
 Options:
   --git-only            Run only git push.
   --dropbox-only        Run only Dropbox push.
   --git-remote NAME     Git remote (default: origin).
   --git-branch NAME     Git branch (default: current branch).
-  --dropbox-path PATH   Dropbox root path for non-git push.
+  --dropbox-path PATH   Dropbox root path for asset push.
   --state-file FILE     Shared local sync timestamp file.
   --config FILE         Dropbox config file path.
   --yes                 Skip Dropbox y/N confirmation prompt.

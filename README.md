@@ -103,13 +103,13 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./check.sh [--no-lint]`: run format check, compile check, and clippy by default.
 - `./ci_local.sh [--release]`: run local CI sequence (fmt, clippy, test, build).
 - `./clean.sh`: remove build artifacts.
-- `./push.sh [options]`: generic push wrapper for git + Dropbox non-git sync.
-- `./pull.sh [options]`: generic pull wrapper for git + Dropbox non-git sync.
-- `./backup_non_git.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-git backup archives; fails if git is not clean and excludes all git-tracked files.
-- `./sync_to_dropbox.sh [--dest PATH] [--state-file FILE] [--config FILE] [--dry-run]`: upload scheduled non-git files individually via Dropbox API using one shared local sync timestamp.
-- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]`: pull non-git files recursively from Dropbox API by comparing remote timestamps to one shared local last-sync timestamp.
-- `./sync_non_git_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]`: direct non-git push script (same behavior as `sync_to_dropbox.sh` push mode).
-- `./pull_non_git_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-git files recursively from Dropbox API and skip unchanged files using one shared local last-sync timestamp.
+- `./push.sh [options]`: generic push wrapper for git + Dropbox asset sync.
+- `./pull.sh [options]`: generic pull wrapper for git + Dropbox asset sync.
+- `./backup_dropbox.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local Dropbox backup archives; fails if git is not clean and excludes all git-tracked files.
+- `./sync_to_dropbox.sh [--dest PATH] [--state-file FILE] [--config FILE] [--dry-run]`: upload scheduled Dropbox files individually via Dropbox API using one shared local sync timestamp.
+- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]`: pull Dropbox files recursively from Dropbox API by comparing remote timestamps to one shared local last-sync timestamp.
+- `./sync_dropbox_push.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]`: direct Dropbox push script (same behavior as `sync_to_dropbox.sh` push mode).
+- `./sync_dropbox_pull.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull Dropbox files recursively from Dropbox API and skip unchanged files using one shared local last-sync timestamp.
 
 ## Secret Scanning
 
@@ -151,21 +151,21 @@ echo "$DROPBOX_ACCESS_TOKEN"
 
 If token is missing, `push.sh` / `pull.sh` will warn and skip only the Dropbox step.
 
-## Backup Non-Git Assets
+## Backup Dropbox Assets
 
-Create a backup archive of non-git assets locally:
+Create a backup archive of Dropbox assets locally:
 
 ```bash
-./backup_non_git.sh
+./backup_dropbox.sh
 ```
 
 Show only the files scheduled for backup (no archive written, with per-file sizes):
 
 ```bash
-./backup_non_git.sh --list-only
+./backup_dropbox.sh --list-only
 ```
 
-`backup_non_git.sh` safety rules:
+`backup_dropbox.sh` safety rules:
 - Requires a clean git working tree.
 - Excludes every git-tracked path from backup output.
 - Applies extra wildcard excludes from `[exclude]` in `dropbox.toml`.
@@ -177,40 +177,40 @@ Show only the files scheduled for backup (no archive written, with per-file size
 Preview included paths without writing an archive:
 
 ```bash
-./backup_non_git.sh --dry-run
+./backup_dropbox.sh --dry-run
 ```
 
 Use a custom destination:
 
 ```bash
-./backup_non_git.sh --dest /path/to/backups
+./backup_dropbox.sh --dest /path/to/backups
 ```
 
 Backup the whole project folder (excluding `.git/` and `target/`):
 
 ```bash
-./backup_non_git.sh --whole-project
+./backup_dropbox.sh --whole-project
 ```
 
 Create a single zip that always overwrites the previous one:
 
 ```bash
-./backup_non_git.sh --whole-project --zip-overwrite
+./backup_dropbox.sh --whole-project --zip-overwrite
 ```
 
 Use a custom config file:
 
 ```bash
-./backup_non_git.sh --whole-project --zip-overwrite --config /path/to/dropbox.toml
+./backup_dropbox.sh --whole-project --zip-overwrite --config /path/to/dropbox.toml
 ```
 
-Upload scheduled non-git files individually (incremental, path-preserving):
+Upload scheduled Dropbox files individually (incremental, path-preserving):
 
 ```bash
 ./sync_to_dropbox.sh --dest /echolab_sync
 ```
 
-Run git push + Dropbox non-git push together:
+Run git push + Dropbox asset push together:
 
 ```bash
 ./push.sh --dropbox-path /echolab_sync --yes
@@ -223,13 +223,13 @@ By default, push uses one shared local timestamp file:
 Override with `--state-file /path/to/file`.
 The timestamp is advanced from Dropbox upload metadata (`server_modified`) so pull comparisons align with remote clock.
 
-Pull non-git files from Dropbox (remote-timestamp validated):
+Pull Dropbox files (remote-timestamp validated):
 
 ```bash
 ./sync_to_dropbox.sh --pull --src /echolab_sync --dest /Users/shane/Project/echolab
 ```
 
-Run git pull + Dropbox non-git pull together:
+Run git pull + Dropbox asset pull together:
 
 ```bash
 ./pull.sh --dropbox-path /echolab_sync --dropbox-dest /Users/shane/Project/echolab --yes

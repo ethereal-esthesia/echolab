@@ -6,9 +6,9 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'USAGE'
-Usage: ./sync_non_git_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]
+Usage: ./sync_dropbox_push.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]
 
-Uploads scheduled non-git files individually to Dropbox API, preserving relative paths.
+Uploads scheduled Dropbox files individually to Dropbox API, preserving relative paths.
 Push decision uses one local sync timestamp file:
 - Upload when local file mtime > last_sync_ts from --state-file.
 
@@ -127,7 +127,7 @@ if [[ -f "$state_file" ]]; then
   [[ "$last_sync_ts" =~ ^[0-9]+$ ]] || last_sync_ts=0
 fi
 
-list_output="$(./backup_non_git.sh --list-only --config "$config_file" --dest /tmp/echolab_backups)"
+list_output="$(./backup_dropbox.sh --list-only --config "$config_file" --dest /tmp/echolab_backups)"
 rel_files=()
 while IFS= read -r rel; do
   [[ -n "$rel" ]] && rel_files+=("$rel")

@@ -10,7 +10,7 @@ Usage: ./pull.sh [options]
 
 Pulls both:
 1) git updates from remote
-2) non-git files from Dropbox via ./sync_to_dropbox.sh --pull
+2) Dropbox asset files via ./sync_to_dropbox.sh --pull
 
 Options:
   --git-only            Run only git pull.
@@ -18,8 +18,8 @@ Options:
   --git-remote NAME     Git remote (default: origin).
   --git-branch NAME     Git branch (default: current branch).
   --rebase              Use git pull --rebase (default is --ff-only).
-  --dropbox-path PATH   Dropbox root path for non-git pull.
-  --dropbox-dest DIR    Local destination root for non-git pull.
+  --dropbox-path PATH   Dropbox root path for asset pull.
+  --dropbox-dest DIR    Local destination root for Dropbox pull.
   --state-file FILE     Shared local sync timestamp file.
   --config FILE         Dropbox config file path.
   --yes                 Skip Dropbox y/N confirmation prompt.

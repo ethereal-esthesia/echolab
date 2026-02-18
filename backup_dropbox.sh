@@ -6,9 +6,9 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: ./backup_non_git.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
+Usage: ./backup_dropbox.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--dry-run] [--list-only]
 
-Creates a timestamped .tar.gz backup of non-git project assets.
+Creates a timestamped .tar.gz backup of Dropbox-synced project assets.
 Backups exclude all git-tracked files and require a clean git working tree.
 
 Options:
@@ -118,7 +118,7 @@ parse_exclude_patterns() {
 
 ensure_clean_git() {
   if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    echo "error: backup_non_git.sh must run inside a git repository." >&2
+    echo "error: backup_dropbox.sh must run inside a git repository." >&2
     exit 1
   fi
 
@@ -474,7 +474,7 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
     fi
   fi
 else
-  out_file="$dest_root/echolab_non_git_${timestamp}.tar.gz"
+  out_file="$dest_root/echolab_dropbox_${timestamp}.tar.gz"
   tar_excludes=()
   for repo_root in "${nested_git_roots[@]}"; do
     tar_excludes+=(--exclude="$repo_root/.git" --exclude="$repo_root/.git/*")

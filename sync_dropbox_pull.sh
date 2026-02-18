@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 usage() {
   cat <<'USAGE'
-Usage: ./pull_non_git_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--state-file FILE] [--dry-run]
+Usage: ./sync_dropbox_pull.sh [--src PATH] [--dest DIR] [--config FILE] [--state-file FILE] [--dry-run]
 
 Pulls files recursively from Dropbox API into a local destination directory,
 preserving relative paths under --src.
