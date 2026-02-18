@@ -109,7 +109,7 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./sync_to_dropbox.sh [--dest PATH] [--state-dir DIR] [--remote-compare] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API and skip unchanged files.
 - `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-dir DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files.
 - `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--remote-compare] [--dry-run]`: direct non-code sync script (same behavior as `sync_to_dropbox.sh`).
-- `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using revision+timestamp checks.
+- `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using strict hash comparison.
 
 ## Secret Scanning
 
@@ -206,7 +206,7 @@ Default local mode is content-aware:
 - Fast path: skip when `mtime` and file size are unchanged.
 - Fallback: if timestamps drift, compare stored content hash and skip if bytes are identical.
 
-Pull non-code files from Dropbox (revision-aware incremental download):
+Pull non-code files from Dropbox (content-hash validated):
 
 ```bash
 ./sync_to_dropbox.sh --pull --src /echolab_sync --dest /Users/shane/Project/echolab

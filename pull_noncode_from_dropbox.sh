@@ -11,17 +11,16 @@ Usage: ./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] 
 Pulls files recursively from Dropbox API into a local destination directory,
 preserving relative paths under --src.
 
-Incremental behavior uses per-file Dropbox revision state + timestamps:
-- If local file exists and rev matches last pulled rev, file is skipped.
-- If rev state is missing/mismatched but local mtime >= Dropbox server_modified,
-  file is treated as up-to-date and skipped.
-- Otherwise file is downloaded and state is updated.
+Sync decision is content-based:
+- Enumerate every remote file under --src.
+- For each file, compute local hash (if file exists) and compare to Dropbox content_hash.
+- Download only when hashes differ or local file is missing.
 
 Options:
   --src PATH        Dropbox source root path (default: /<sync_folder_name>).
   --dest DIR        Local destination root directory (default: repo root).
   --config FILE     Config file path (default: ./dropbox.toml).
-  --state-dir DIR   Pull state directory (default: .backup_state/dropbox_pull_noncode).
+  --state-dir DIR   Pull bookkeeping directory (default: .backup_state/dropbox_pull_noncode).
                     Also updates push state files in .backup_state/dropbox_sync_noncode
                     so unchanged pulled files are not re-uploaded.
   --dry-run         Show what would download without writing files.
@@ -216,7 +215,8 @@ for e in obj.get("entries",[]):
     r=e.get("rev","")
     m=e.get("server_modified","")
     if p:
-        print(f"{p}\t{r}\t{m}")
+        h=e.get("content_hash","")
+        print(f"{p}\t{r}\t{m}\t{h}")
 ' >> "$list_tmp"
 
     has_more_val="$(printf "%s" "$resp" | python3 -c 'import json,sys; print(1 if json.load(sys.stdin).get("has_more") else 0)')"
@@ -248,7 +248,7 @@ downloaded=0
 skipped=0
 failed=0
 
-while IFS=$'\t' read -r path_display rev server_modified; do
+while IFS=$'\t' read -r path_display rev server_modified remote_hash; do
   [[ -n "$path_display" ]] || continue
   rel="${path_display#${src_root%/}/}"
   if [[ "$rel" == "$path_display" ]]; then
@@ -260,31 +260,12 @@ while IFS=$'\t' read -r path_display rev server_modified; do
   state_key="$(printf "%s" "$path_display" | shasum -a 1 | awk '{print $1}')"
   state_file="$state_dir/${state_key}.state"
 
-  last_rev=""
-  last_remote_epoch=0
-  if [[ -f "$state_file" ]]; then
-    read -r last_rev last_remote_epoch < "$state_file" || true
-    [[ "$last_remote_epoch" =~ ^[0-9]+$ ]] || last_remote_epoch=0
-  fi
   remote_epoch="$(iso_to_epoch "$server_modified")"
 
-  if [[ -f "$local_abs" && -n "$last_rev" && "$last_rev" == "$rev" ]]; then
-    printf "%s %s\n" "$rev" "$remote_epoch" > "$state_file"
-    if [[ "$dry_run" -eq 0 ]]; then
-      write_push_state_from_local "$rel" "$local_abs"
-    fi
-    skipped=$((skipped + 1))
-    continue
-  fi
-
-  if [[ -f "$local_abs" ]]; then
-    if stat -f %m "$local_abs" >/dev/null 2>&1; then
-      local_mtime="$(stat -f %m "$local_abs")"
-    else
-      local_mtime="$(stat -c %Y "$local_abs")"
-    fi
-    if (( remote_epoch > 0 && local_mtime >= remote_epoch )); then
-      printf "%s %s\n" "$rev" "$remote_epoch" > "$state_file"
+  if [[ -f "$local_abs" && -n "$remote_hash" ]]; then
+    local_hash="$(file_sha1 "$local_abs")"
+    if [[ "$local_hash" == "$remote_hash" ]]; then
+      printf "%s %s %s\n" "$rev" "$remote_epoch" "$remote_hash" > "$state_file"
       if [[ "$dry_run" -eq 0 ]]; then
         write_push_state_from_local "$rel" "$local_abs"
       fi
@@ -306,7 +287,7 @@ while IFS=$'\t' read -r path_display rev server_modified; do
     --header "Authorization: Bearer $dropbox_token" \
     --header "Dropbox-API-Arg: $api_arg" \
     -o "$local_abs"; then
-    printf "%s %s\n" "$rev" "$remote_epoch" > "$state_file"
+    printf "%s %s %s\n" "$rev" "$remote_epoch" "$remote_hash" > "$state_file"
     write_push_state_from_local "$rel" "$local_abs"
     downloaded=$((downloaded + 1))
   else
