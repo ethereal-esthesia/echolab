@@ -219,7 +219,7 @@ Run git pull + Dropbox non-code pull together:
 ```
 
 `pull.sh` always previews Dropbox changes (`download:` list) first, then prompts `y/N` unless `--yes` is set.
-Both wrappers use `--dropbox-path` for the remote Dropbox path (`--dropbox-src` remains accepted as an alias in pull; `--dropbox-dest` remains accepted as an alias in push).
+Both wrappers use `--dropbox-path` for the remote Dropbox path.
 
 Pull default source now follows `default_sync_dir` in `dropbox.toml` (same default path used by push). If `default_sync_dir` is empty, pull falls back to `/<sync_folder_name>/noncode`.
 

@@ -18,7 +18,6 @@ Options:
   --git-remote NAME     Git remote (default: origin).
   --git-branch NAME     Git branch (default: current branch).
   --dropbox-path PATH   Dropbox root path for non-code push.
-  --dropbox-dest PATH   Alias for --dropbox-path.
   --state-dir DIR       State dir for non-code push.
   --remote-compare      Dropbox push: compare against remote timestamps.
   --config FILE         Dropbox config file path.
@@ -61,7 +60,7 @@ while [[ $# -gt 0 ]]; do
       git_branch="$2"
       shift 2
       ;;
-    --dropbox-path|--dropbox-dest)
+    --dropbox-path)
       [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 2; }
       dropbox_dest="$2"
       shift 2

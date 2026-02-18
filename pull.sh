@@ -19,7 +19,6 @@ Options:
   --git-branch NAME     Git branch (default: current branch).
   --rebase              Use git pull --rebase (default is --ff-only).
   --dropbox-path PATH   Dropbox root path for non-code pull.
-  --dropbox-src PATH    Alias for --dropbox-path.
   --dropbox-dest DIR    Local destination root for non-code pull.
   --state-dir DIR       State dir for non-code pull.
   --config FILE         Dropbox config file path.
@@ -67,7 +66,7 @@ while [[ $# -gt 0 ]]; do
       git_rebase=1
       shift
       ;;
-    --dropbox-path|--dropbox-src)
+    --dropbox-path)
       [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 2; }
       dropbox_src="$2"
       shift 2
