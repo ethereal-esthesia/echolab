@@ -107,9 +107,9 @@ Use `--no-strict-bw` only when you intentionally want thresholded conversion.
 - `./pull.sh [options]`: generic pull wrapper for git + Dropbox non-code sync.
 - `./backup_noncode.sh [--dest DIR] [--whole-project] [--zip-overwrite] [--config FILE] [--list-only]`: create local non-code backup archives; fails if git is not clean and excludes all git-tracked files.
 - `./sync_to_dropbox.sh [--dest PATH] [--state-file FILE] [--config FILE] [--dry-run]`: upload scheduled non-code files individually via Dropbox API using one shared local sync timestamp.
-- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API by comparing remote timestamps to local file timestamps.
+- `./sync_to_dropbox.sh --pull [--src PATH] [--dest DIR] [--state-file FILE] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API by comparing remote timestamps to one shared local last-sync timestamp.
 - `./sync_noncode_to_dropbox.sh [--dest PATH] [--config FILE] [--state-file FILE] [--dry-run]`: direct non-code push script (same behavior as `sync_to_dropbox.sh` push mode).
-- `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using remote timestamp comparison.
+- `./pull_noncode_from_dropbox.sh [--src PATH] [--dest DIR] [--config FILE] [--dry-run]`: pull non-code files recursively from Dropbox API and skip unchanged files using one shared local last-sync timestamp.
 
 ## Secret Scanning
 

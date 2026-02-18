@@ -13,8 +13,9 @@ preserving relative paths under --src.
 
 Sync decision is remote-timestamp-based:
 - Enumerate every remote file under --src.
-- For each file, compare local mtime against Dropbox server_modified.
-- Download when local file is missing or older than remote.
+- For each file, compare Dropbox server_modified against one shared local
+  last sync timestamp from --state-file.
+- Download when remote file timestamp is newer than last sync timestamp.
 
 Options:
   --src PATH        Dropbox source root path (default: /<sync_folder_name>).
@@ -204,6 +205,12 @@ echo "Dropbox source root: $src_root"
 echo "Local destination root: $dest_root"
 echo "Token env key: $token_env_name"
 echo "State file: $state_file"
+last_sync_ts=0
+if [[ -f "$state_file" ]]; then
+  read -r last_sync_ts < "$state_file" || true
+  [[ "$last_sync_ts" =~ ^[0-9]+$ ]] || last_sync_ts=0
+fi
+echo "Last sync ts: $last_sync_ts"
 echo "Candidate remote files: $(wc -l < "$list_tmp" | tr -d ' ')"
 
 downloaded=0
@@ -220,16 +227,9 @@ while IFS=$'\t' read -r path_display server_modified; do
   local_abs="$dest_root/$rel"
   remote_epoch="$(iso_to_epoch "$server_modified")"
 
-  if [[ -f "$local_abs" && "$remote_epoch" -gt 0 ]]; then
-    if stat -f %m "$local_abs" >/dev/null 2>&1; then
-      local_mtime="$(stat -f %m "$local_abs")"
-    else
-      local_mtime="$(stat -c %Y "$local_abs")"
-    fi
-    if (( local_mtime >= remote_epoch )); then
-      skipped=$((skipped + 1))
-      continue
-    fi
+  if (( remote_epoch > 0 && remote_epoch <= last_sync_ts )); then
+    skipped=$((skipped + 1))
+    continue
   fi
 
   echo "download: $path_display -> $local_abs"
