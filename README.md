@@ -186,11 +186,13 @@ Upload scheduled non-code files individually (incremental, path-preserving):
 ./sync_to_dropbox.sh --dest /echolab_sync/noncode
 ```
 
-Run git push + Dropbox non-code push together (prompts before Dropbox unless `--yes`):
+Run git push + Dropbox non-code push together:
 
 ```bash
 ./push.sh --dropbox-dest /echolab_sync/noncode --yes
 ```
+
+`push.sh` always previews Dropbox changes (`upload:` list) first, then prompts `y/N` unless `--yes` is set.
 
 Use Dropbox metadata timestamps instead of local state files:
 
@@ -210,11 +212,13 @@ Pull non-code files from Dropbox (revision-aware incremental download):
 ./sync_to_dropbox.sh --pull --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
 ```
 
-Run git pull + Dropbox non-code pull together (prompts before Dropbox unless `--yes`):
+Run git pull + Dropbox non-code pull together:
 
 ```bash
 ./pull.sh --dropbox-src /echolab_sync/noncode --dropbox-dest /Users/shane/Project/echolab --yes
 ```
+
+`pull.sh` always previews Dropbox changes (`download:` list) first, then prompts `y/N` unless `--yes` is set.
 
 Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
 

@@ -124,9 +124,28 @@ if [[ "$run_git" -eq 1 ]]; then
 fi
 
 if [[ "$run_dropbox" -eq 1 ]]; then
+  dropbox_args=(--pull)
+  [[ -n "$dropbox_src" ]] && dropbox_args+=(--src "$dropbox_src")
+  [[ -n "$dropbox_dest" ]] && dropbox_args+=(--dest "$dropbox_dest")
+  [[ -n "$state_dir" ]] && dropbox_args+=(--state-dir "$state_dir")
+  [[ -n "$config_file" ]] && dropbox_args+=(--config "$config_file")
+  preview_args=("${dropbox_args[@]}" --dry-run)
+  echo "[dropbox] preview: ./sync_to_dropbox.sh ${preview_args[*]}"
+  preview_output="$(./sync_to_dropbox.sh "${preview_args[@]}")"
+  printf "%s\n" "$preview_output"
+  changed_count="$(printf "%s\n" "$preview_output" | grep -c '^download: ' || true)"
+  if [[ "$changed_count" -eq 0 ]]; then
+    echo "[dropbox] no file changes to pull."
+    exit 0
+  fi
+
+  if [[ "$dry_run" -eq 1 ]]; then
+    exit 0
+  fi
+
   if [[ "$assume_yes" -eq 0 ]]; then
     if [[ -t 0 ]]; then
-      printf "Run Dropbox pull now? [y/N] " >&2
+      printf "Run Dropbox pull for %s file(s)? [y/N] " "$changed_count" >&2
       read -r reply || true
       case "$reply" in
         [yY]|[yY][eE][sS]) ;;
@@ -140,12 +159,7 @@ if [[ "$run_dropbox" -eq 1 ]]; then
       exit 2
     fi
   fi
-  dropbox_args=(--pull)
-  [[ -n "$dropbox_src" ]] && dropbox_args+=(--src "$dropbox_src")
-  [[ -n "$dropbox_dest" ]] && dropbox_args+=(--dest "$dropbox_dest")
-  [[ -n "$state_dir" ]] && dropbox_args+=(--state-dir "$state_dir")
-  [[ -n "$config_file" ]] && dropbox_args+=(--config "$config_file")
-  [[ "$dry_run" -eq 1 ]] && dropbox_args+=(--dry-run)
-  echo "[dropbox] ./sync_to_dropbox.sh ${dropbox_args[*]}"
+
+  echo "[dropbox] run: ./sync_to_dropbox.sh ${dropbox_args[*]}"
   ./sync_to_dropbox.sh "${dropbox_args[@]}"
 fi
