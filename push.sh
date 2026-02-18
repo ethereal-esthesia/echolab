@@ -99,9 +99,25 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-dropbox_will_run=0
 if [[ "$run_dropbox" -eq 1 ]]; then
-  dropbox_will_run=1
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "error: Dropbox push flow requires running inside a git repository." >&2
+    exit 1
+  fi
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo "error: git working tree is not clean. Commit/stash changes before Dropbox push." >&2
+    exit 1
+  fi
+fi
+
+if [[ "$run_git" -eq 1 ]]; then
+  if [[ -z "$git_branch" ]]; then
+    git_branch="$(git rev-parse --abbrev-ref HEAD)"
+  fi
+  echo "[git] push $git_remote $git_branch"
+  if [[ "$dry_run" -eq 0 ]]; then
+    git push "$git_remote" "$git_branch"
+  fi
 fi
 
 if [[ "$run_dropbox" -eq 1 ]]; then
@@ -145,19 +161,7 @@ if [[ "$run_dropbox" -eq 1 ]]; then
       exit 2
     fi
   fi
-fi
 
-if [[ "$run_git" -eq 1 ]]; then
-  if [[ -z "$git_branch" ]]; then
-    git_branch="$(git rev-parse --abbrev-ref HEAD)"
-  fi
-  echo "[git] push $git_remote $git_branch"
-  if [[ "$dry_run" -eq 0 ]]; then
-    git push "$git_remote" "$git_branch"
-  fi
-fi
-
-if [[ "$dropbox_will_run" -eq 1 ]]; then
   echo "[dropbox] run: ${dropbox_cmd[*]}"
   "${dropbox_cmd[@]}"
 fi
