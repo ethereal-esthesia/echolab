@@ -10,6 +10,16 @@
   Notes: Check `dropbox.toml` (`default_sync_dir`, `sync_folder_name`) and README examples.
 
 ## Next
+- [todo] Implement CPU state + single-step execution scaffold in `src/`.
+
+- [todo] Add a memory bus abstraction layer and route machine memory accesses through it.
+
+- [todo] Create deterministic trace-based tests for CPU/memory/video tick behavior.
+
+- [todo] Model video VBlank edge semantics in the scan timing path.
+
+- [todo] Add keyboard strobe/read-clear behavior tests matching hardware contracts.
+
 - [todo] Extract shared shell helpers into one file
   Why: Reduce duplication (`parse_toml`, token env resolution, timestamp parsing) across scripts.
   Notes: Candidate file: `tools/shell/dropbox_common.sh`.
