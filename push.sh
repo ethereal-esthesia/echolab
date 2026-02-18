@@ -110,12 +110,16 @@ if [[ "$run_git" -eq 1 ]]; then
 fi
 
 if [[ "$run_dropbox" -eq 1 ]]; then
-  dropbox_args=()
+  dropbox_args=( )
   [[ -n "$dropbox_dest" ]] && dropbox_args+=(--dest "$dropbox_dest")
   [[ -n "$state_dir" ]] && dropbox_args+=(--state-dir "$state_dir")
   [[ -n "$config_file" ]] && dropbox_args+=(--config "$config_file")
   [[ "$remote_compare" -eq 1 ]] && dropbox_args+=(--remote-compare)
-  preview_args=("${dropbox_args[@]}" --dry-run)
+  preview_args=(--dry-run)
+  [[ -n "$dropbox_dest" ]] && preview_args+=(--dest "$dropbox_dest")
+  [[ -n "$state_dir" ]] && preview_args+=(--state-dir "$state_dir")
+  [[ -n "$config_file" ]] && preview_args+=(--config "$config_file")
+  [[ "$remote_compare" -eq 1 ]] && preview_args+=(--remote-compare)
   echo "[dropbox] preview: ./sync_to_dropbox.sh ${preview_args[*]}"
   preview_output="$(./sync_to_dropbox.sh "${preview_args[@]}")"
   printf "%s\n" "$preview_output"

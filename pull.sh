@@ -129,7 +129,11 @@ if [[ "$run_dropbox" -eq 1 ]]; then
   [[ -n "$dropbox_dest" ]] && dropbox_args+=(--dest "$dropbox_dest")
   [[ -n "$state_dir" ]] && dropbox_args+=(--state-dir "$state_dir")
   [[ -n "$config_file" ]] && dropbox_args+=(--config "$config_file")
-  preview_args=("${dropbox_args[@]}" --dry-run)
+  preview_args=(--pull --dry-run)
+  [[ -n "$dropbox_src" ]] && preview_args+=(--src "$dropbox_src")
+  [[ -n "$dropbox_dest" ]] && preview_args+=(--dest "$dropbox_dest")
+  [[ -n "$state_dir" ]] && preview_args+=(--state-dir "$state_dir")
+  [[ -n "$config_file" ]] && preview_args+=(--config "$config_file")
   echo "[dropbox] preview: ./sync_to_dropbox.sh ${preview_args[*]}"
   preview_output="$(./sync_to_dropbox.sh "${preview_args[@]}")"
   printf "%s\n" "$preview_output"
