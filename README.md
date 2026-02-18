@@ -189,7 +189,7 @@ Upload scheduled non-code files individually (incremental, path-preserving):
 Run git push + Dropbox non-code push together:
 
 ```bash
-./push.sh --dropbox-dest /echolab_sync/noncode --yes
+./push.sh --dropbox-path /echolab_sync/noncode --yes
 ```
 
 `push.sh` always previews Dropbox changes (`upload:` list) first, then prompts `y/N` unless `--yes` is set.
@@ -215,10 +215,11 @@ Pull non-code files from Dropbox (revision-aware incremental download):
 Run git pull + Dropbox non-code pull together:
 
 ```bash
-./pull.sh --dropbox-src /echolab_sync/noncode --dropbox-dest /Users/shane/Project/echolab --yes
+./pull.sh --dropbox-path /echolab_sync/noncode --dropbox-dest /Users/shane/Project/echolab --yes
 ```
 
 `pull.sh` always previews Dropbox changes (`download:` list) first, then prompts `y/N` unless `--yes` is set.
+Both wrappers use `--dropbox-path` for the remote Dropbox path (`--dropbox-src` remains accepted as an alias in pull; `--dropbox-dest` remains accepted as an alias in push).
 
 Pull default source now follows `default_sync_dir` in `dropbox.toml` (same default path used by push). If `default_sync_dir` is empty, pull falls back to `/<sync_folder_name>/noncode`.
 
