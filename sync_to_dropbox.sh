@@ -80,6 +80,12 @@ if [[ "$mode" == "pull" ]]; then
     usage
     exit 2
   fi
-  exec "$SCRIPT_DIR/pull_noncode_from_dropbox.sh" "${delegated_args[@]}"
+  if [[ -n "${delegated_args[*]-}" ]]; then
+    exec "$SCRIPT_DIR/pull_noncode_from_dropbox.sh" "${delegated_args[@]}"
+  fi
+  exec "$SCRIPT_DIR/pull_noncode_from_dropbox.sh"
 fi
-exec "$SCRIPT_DIR/sync_noncode_to_dropbox.sh" "${delegated_args[@]}"
+if [[ -n "${delegated_args[*]-}" ]]; then
+  exec "$SCRIPT_DIR/sync_noncode_to_dropbox.sh" "${delegated_args[@]}"
+fi
+exec "$SCRIPT_DIR/sync_noncode_to_dropbox.sh"
