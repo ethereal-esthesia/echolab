@@ -2,6 +2,26 @@
 
 EchoLab is a repository for retro machines emulation and experimentation.
 
+## Workflow Quickstart
+
+```bash
+# 1) One-time token setup (current shell)
+export DROPBOX_ACCESS_TOKEN="your_token_here"
+
+# 2) Daily push (git + Dropbox asset sync)
+./push.sh --yes
+
+# 3) Daily pull (git + Dropbox asset sync)
+./pull.sh --yes
+```
+
+Preview only (no changes):
+
+```bash
+./push.sh --dry-run
+./pull.sh --dry-run
+```
+
 ## Current Scope
 
 - Minimal lab model and machine registry
