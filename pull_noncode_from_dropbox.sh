@@ -18,7 +18,7 @@ Incremental behavior uses per-file Dropbox revision state + timestamps:
 - Otherwise file is downloaded and state is updated.
 
 Options:
-  --src PATH        Dropbox source root path (default: /<sync_folder_name>/noncode).
+  --src PATH        Dropbox source root path (default: /<sync_folder_name>).
   --dest DIR        Local destination root directory (default: repo root).
   --config FILE     Config file path (default: ./dropbox.toml).
   --state-dir DIR   Pull state directory (default: .backup_state/dropbox_pull_noncode).
@@ -148,7 +148,7 @@ if [[ -f "$config_file" ]]; then
 fi
 
 if [[ -z "$src_root" ]]; then
-  src_root="/$sync_folder_name/noncode"
+  src_root="/$sync_folder_name"
 fi
 [[ "$src_root" == /* ]] || src_root="/$src_root"
 

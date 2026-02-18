@@ -183,13 +183,13 @@ Use a custom config file:
 Upload scheduled non-code files individually (incremental, path-preserving):
 
 ```bash
-./sync_to_dropbox.sh --dest /echolab_sync/noncode
+./sync_to_dropbox.sh --dest /echolab_sync
 ```
 
 Run git push + Dropbox non-code push together:
 
 ```bash
-./push.sh --dropbox-path /echolab_sync/noncode --yes
+./push.sh --dropbox-path /echolab_sync --yes
 ```
 
 `push.sh` always previews Dropbox changes (`upload:` list) first, then prompts `y/N` unless `--yes` is set.
@@ -197,7 +197,7 @@ Run git push + Dropbox non-code push together:
 Use Dropbox metadata timestamps instead of local state files:
 
 ```bash
-./sync_to_dropbox.sh --dest /echolab_sync/noncode --remote-compare
+./sync_to_dropbox.sh --dest /echolab_sync --remote-compare
 ```
 
 `--remote-compare` still updates local per-file state on successful uploads, so follow-up default runs skip unchanged files.
@@ -209,19 +209,19 @@ Default local mode is content-aware:
 Pull non-code files from Dropbox (revision-aware incremental download):
 
 ```bash
-./sync_to_dropbox.sh --pull --src /echolab_sync/noncode --dest /Users/shane/Project/echolab
+./sync_to_dropbox.sh --pull --src /echolab_sync --dest /Users/shane/Project/echolab
 ```
 
 Run git pull + Dropbox non-code pull together:
 
 ```bash
-./pull.sh --dropbox-path /echolab_sync/noncode --dropbox-dest /Users/shane/Project/echolab --yes
+./pull.sh --dropbox-path /echolab_sync --dropbox-dest /Users/shane/Project/echolab --yes
 ```
 
 `pull.sh` always previews Dropbox changes (`download:` list) first, then prompts `y/N` unless `--yes` is set.
 Both wrappers use `--dropbox-path` for the remote Dropbox path.
 
-Pull default source now follows `default_sync_dir` in `dropbox.toml` (same default path used by push). If `default_sync_dir` is empty, pull falls back to `/<sync_folder_name>/noncode`.
+Pull default source now follows `default_sync_dir` in `dropbox.toml` (same default path used by push). If `default_sync_dir` is empty, pull falls back to `/<sync_folder_name>`.
 
 Pull also refreshes push-side per-file state (`.backup_state/dropbox_sync_noncode`) for downloaded/skipped files so a subsequent upload run does not re-push unchanged content.
 
