@@ -20,6 +20,24 @@
 
 - [todo] Add keyboard strobe/read-clear behavior tests matching hardware contracts.
 
+- [todo] Emulate accurate CRT/power-down shutdown sequence
+  Why: Match real shutdown artifacts with one unified physical model instead of isolated effects.
+  Methods:
+  - Power rail collapse dynamics
+    Notes: B+, heater, and HV do not fall together; different time constants drive temporary deflection and gain shifts.
+  - Sync/separator + oscillator unlock
+    Notes: As signal amplitude drops, H/V PLLs lose lock intermittently, causing bar hopping, diagonal tearing, and re-lock bursts.
+  - Deflection amplifier/yoke nonlinear response
+    Notes: Under supply sag, vertical and horizontal stages compress differently (anisotropic collapse), with ringing and partial rebounds.
+  - Blanking/beam current/AGC behavior
+    Notes: Undervoltage shifts blanking thresholds and AGC, producing bright lines, noise bursts, and black-level pumping.
+  - HV/flyback interaction with beam focus/size
+    Notes: HV droop and flyback behavior alter spot size, bloom, and width/height coupling during collapse.
+
+- [todo] Emulate the composite video signal path end-to-end
+  Why: Model the same information and distortions a real display receives, not just post-decoder pixels.
+  Notes: Include sync pulse generation, burst/chroma+luma encoding, line timing/jitter, bandwidth limits, noise/interference, and decode back into display-domain behavior.
+
 - [todo] Extract shared shell helpers into one file
   Why: Reduce duplication (`parse_toml`, token env resolution, timestamp parsing) across scripts.
   Notes: Candidate file: `tools/shell/dropbox_common.sh`.
