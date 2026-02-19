@@ -15,7 +15,7 @@ Options:
   --dest DIR          Backup destination directory.
                       Default: "default_backup_dir" from config,
                       else "./.backups/<backup_folder_name>".
-  --whole-project     Backup the whole project folder (excludes .git and target).
+  --whole-project     Deprecated no-op: whole-project scope is now the default.
   --zip-overwrite     Write/replace "<dest>/echolab_latest.zip" each run.
   --config FILE       Dropbox config file path (default: ./dropbox.toml).
   --dry-run           Show what would be backed up without creating archive.
@@ -25,7 +25,7 @@ EOF
 }
 
 dest_root=""
-whole_project=0
+whole_project=1
 zip_overwrite=0
 config_file="$SCRIPT_DIR/dropbox.toml"
 dry_run=0
@@ -45,6 +45,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --whole-project)
+      # Kept for backwards compatibility. Whole-project is now always enabled.
       whole_project=1
       shift
       ;;
@@ -192,25 +193,7 @@ path_is_under() {
 
 collect_project_scan_roots() {
   local repo_root="$1"
-  local roots=()
-  local candidate
-
-  if [[ "$whole_project" -eq 1 ]]; then
-    roots+=("$repo_root")
-  else
-    for candidate in "${existing[@]}"; do
-      if path_is_under "$candidate" "$repo_root"; then
-        roots+=("$candidate")
-      elif path_is_under "$repo_root" "$candidate"; then
-        roots+=("$repo_root")
-      fi
-    done
-  fi
-
-  if [[ "${#roots[@]}" -eq 0 ]]; then
-    return
-  fi
-  printf "%s\n" "${roots[@]}" | awk 'NF' | sort -u
+  printf "%s\n" "$repo_root"
 }
 
 collect_project_files() {
@@ -365,37 +348,11 @@ fi
 
 echo "Backup source: $SCRIPT_DIR"
 echo "Backup target dir: $dest_root"
-if [[ "$whole_project" -eq 1 ]]; then
-  echo "Included paths:"
-  echo "  - . (whole project)"
-  echo "Excluded paths:"
-  echo "  - .git/"
-  echo "  - target/"
-else
-  items=(
-    "assets/roms"
-    "screenshots"
-    "echolab.toml"
-    "archive"
-  )
-
-  existing=()
-  for item in "${items[@]}"; do
-    if [[ -e "$item" ]]; then
-      existing+=("$item")
-    fi
-  done
-
-  if [[ "${#existing[@]}" -eq 0 ]]; then
-    echo "error: no backup targets found." >&2
-    exit 1
-  fi
-
-  printf 'Included paths:\n'
-  for item in "${existing[@]}"; do
-    echo "  - $item"
-  done
-fi
+echo "Included paths:"
+echo "  - . (whole project)"
+echo "Excluded paths:"
+echo "  - .git/"
+echo "  - target/"
 
 if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
   echo "Config excludes:"
@@ -443,36 +400,17 @@ if [[ "$zip_overwrite" -eq 1 ]]; then
   fi
   out_file="$dest_root/echolab_latest.zip"
   rm -f "$out_file"
-  if [[ "$whole_project" -eq 1 ]]; then
-    zip_excludes=(".git/*" "target/*")
-    for repo_root in "${nested_git_roots[@]}"; do
-      zip_excludes+=("$repo_root/.git/*")
-    done
-    for tracked in "${git_excludes[@]}"; do
-      zip_excludes+=("$tracked")
-    done
-    for pattern in "${exclude_patterns[@]}"; do
-      zip_excludes+=("$pattern")
-    done
-    zip -ry "$out_file" . -x "${zip_excludes[@]}"
-  else
-    zip_excludes=()
-    for tracked in "${git_excludes[@]}"; do
-      zip_excludes+=("$tracked")
-    done
-    for pattern in "${exclude_patterns[@]}"; do
-      zip_excludes+=("$pattern")
-    done
-    if [[ "${#exclude_patterns[@]}" -gt 0 ]]; then
-      zip -ry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
-    else
-      if [[ "${#zip_excludes[@]}" -gt 0 ]]; then
-        zip -ry "$out_file" "${existing[@]}" -x "${zip_excludes[@]}"
-      else
-        zip -ry "$out_file" "${existing[@]}"
-      fi
-    fi
-  fi
+  zip_excludes=(".git/*" "target/*")
+  for repo_root in "${nested_git_roots[@]}"; do
+    zip_excludes+=("$repo_root/.git/*")
+  done
+  for tracked in "${git_excludes[@]}"; do
+    zip_excludes+=("$tracked")
+  done
+  for pattern in "${exclude_patterns[@]}"; do
+    zip_excludes+=("$pattern")
+  done
+  zip -ry "$out_file" . -x "${zip_excludes[@]}"
 else
   out_file="$dest_root/echolab_dropbox_${timestamp}.tar.gz"
   tar_excludes=()
@@ -485,11 +423,7 @@ else
   for pattern in "${exclude_patterns[@]}"; do
     tar_excludes+=(--exclude="$pattern")
   done
-  if [[ "$whole_project" -eq 1 ]]; then
-    tar -czvf "$out_file" --exclude=.git --exclude=target "${tar_excludes[@]}" .
-  else
-    tar -czvf "$out_file" "${tar_excludes[@]}" "${existing[@]}"
-  fi
+  tar -czvf "$out_file" --exclude=.git --exclude=target "${tar_excludes[@]}" .
 fi
 
 echo "Backup created: $out_file"
