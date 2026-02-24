@@ -27,6 +27,19 @@ state_file="$SCRIPT_DIR/.backup_state/dropbox_last_sync_time"
 dry_run=0
 sync_folder_name="echolab_sync"
 token_env_name="DROPBOX_ACCESS_TOKEN"
+refresh_token_env_name="DROPBOX_REFRESH_TOKEN"
+app_key_env_name="DROPBOX_APP_KEY"
+app_secret_env_name="DROPBOX_APP_SECRET"
+
+load_project_dropbox_env() {
+  local env_file="$SCRIPT_DIR/.secrets/dropbox.env"
+  if [[ -f "$env_file" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$env_file"
+    set +a
+  fi
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -60,6 +73,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+load_project_dropbox_env
 
 parse_toml_string() {
   local key="$1"
@@ -97,6 +112,12 @@ iso_to_epoch() {
 if [[ -f "$config_file" ]]; then
   token_env_name_cfg="$(parse_toml_string "token_env" "$config_file" || true)"
   [[ -n "${token_env_name_cfg:-}" ]] && token_env_name="$token_env_name_cfg"
+  refresh_env_cfg="$(parse_toml_string "refresh_token_env" "$config_file" || true)"
+  [[ -n "${refresh_env_cfg:-}" ]] && refresh_token_env_name="$refresh_env_cfg"
+  app_key_env_cfg="$(parse_toml_string "app_key_env" "$config_file" || true)"
+  [[ -n "${app_key_env_cfg:-}" ]] && app_key_env_name="$app_key_env_cfg"
+  app_secret_env_cfg="$(parse_toml_string "app_secret_env" "$config_file" || true)"
+  [[ -n "${app_secret_env_cfg:-}" ]] && app_secret_env_name="$app_secret_env_cfg"
   sync_folder_name_cfg="$(parse_toml_string "sync_folder_name" "$config_file" || true)"
   [[ -n "${sync_folder_name_cfg:-}" ]] && sync_folder_name="$sync_folder_name_cfg"
   if [[ -z "$dest_root" ]]; then
@@ -110,16 +131,55 @@ if [[ -z "$dest_root" ]]; then
 fi
 [[ "$dest_root" == /* ]] || dest_root="/$dest_root"
 
-dropbox_token="${!token_env_name:-}"
-if [[ -z "$dropbox_token" ]]; then
-  echo "error: Dropbox token env var is empty: $token_env_name" >&2
-  exit 1
-fi
-
 if ! command -v curl >/dev/null 2>&1; then
   echo "error: curl is required for Dropbox API upload." >&2
   exit 1
 fi
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "error: python3 is required for Dropbox token parsing." >&2
+  exit 1
+fi
+
+resolve_access_token() {
+  local direct_token refresh_token app_key app_secret oauth_resp oauth_token
+  direct_token="${!token_env_name:-}"
+  if [[ -n "$direct_token" ]]; then
+    dropbox_token="$direct_token"
+    auth_mode="access-token"
+    return 0
+  fi
+
+  refresh_token="${!refresh_token_env_name:-}"
+  app_key="${!app_key_env_name:-}"
+  app_secret="${!app_secret_env_name:-}"
+  if [[ -z "$refresh_token" || -z "$app_key" || -z "$app_secret" ]]; then
+    echo "error: Dropbox credentials missing. Set $token_env_name or ($refresh_token_env_name + $app_key_env_name + $app_secret_env_name)." >&2
+    return 1
+  fi
+
+  oauth_resp="$(curl -sS -f -X POST "https://api.dropboxapi.com/oauth2/token" \
+    --data-urlencode "grant_type=refresh_token" \
+    --data-urlencode "refresh_token=$refresh_token" \
+    --data-urlencode "client_id=$app_key" \
+    --data-urlencode "client_secret=$app_secret")" || {
+    echo "error: failed to exchange Dropbox refresh token for access token." >&2
+    return 1
+  }
+
+  oauth_token="$(printf "%s" "$oauth_resp" | python3 -c 'import json,sys; obj=json.load(sys.stdin); print(obj.get("access_token",""))' 2>/dev/null || true)"
+  if [[ -z "$oauth_token" ]]; then
+    echo "error: Dropbox OAuth exchange response missing access_token." >&2
+    return 1
+  fi
+
+  dropbox_token="$oauth_token"
+  auth_mode="refresh-token"
+  return 0
+}
+
+dropbox_token=""
+auth_mode=""
+resolve_access_token
 
 last_sync_ts=0
 if [[ -f "$state_file" ]]; then
@@ -139,7 +199,12 @@ if [[ "${#rel_files[@]}" -eq 0 ]]; then
 fi
 
 echo "Dropbox destination root: $dest_root"
-echo "Token env key: $token_env_name"
+echo "Dropbox auth mode: $auth_mode"
+if [[ "$auth_mode" == "access-token" ]]; then
+  echo "Token env key: $token_env_name"
+else
+  echo "Refresh env keys: $refresh_token_env_name, $app_key_env_name, $app_secret_env_name"
+fi
 echo "State file: $state_file"
 echo "Last sync ts: $last_sync_ts"
 echo "Candidate files: ${#rel_files[@]}"

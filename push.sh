@@ -36,24 +36,60 @@ config_file=""
 assume_yes=0
 dry_run=0
 
-resolve_token_env_name() {
-  local cfg="$1"
-  local key="DROPBOX_ACCESS_TOKEN"
-  if [[ -f "$cfg" ]]; then
-    parsed="$(awk -F '=' '
-      $1 ~ /^[[:space:]]*token_env[[:space:]]*$/ {
-        val = $2
-        sub(/^[[:space:]]*/, "", val)
-        sub(/[[:space:]]*#.*/, "", val)
-        gsub(/^"/, "", val)
-        gsub(/"$/, "", val)
-        print val
-        exit
-      }
-    ' "$cfg")"
-    [[ -n "${parsed:-}" ]] && key="$parsed"
+load_project_dropbox_env() {
+  local env_file="$SCRIPT_DIR/.secrets/dropbox.env"
+  if [[ -f "$env_file" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$env_file"
+    set +a
   fi
-  printf "%s\n" "$key"
+}
+
+parse_toml_string() {
+  local key="$1"
+  local path="$2"
+  awk -F '=' -v key="$key" '
+    $1 ~ "^[[:space:]]*" key "[[:space:]]*$" {
+      val = $2
+      sub(/^[[:space:]]*/, "", val)
+      sub(/[[:space:]]*#.*/, "", val)
+      gsub(/^"/, "", val)
+      gsub(/"$/, "", val)
+      print val
+      exit
+    }
+  ' "$path"
+}
+
+resolve_dropbox_auth_envs() {
+  local cfg="$1"
+  dropbox_token_env_name="DROPBOX_ACCESS_TOKEN"
+  dropbox_refresh_env_name="DROPBOX_REFRESH_TOKEN"
+  dropbox_app_key_env_name="DROPBOX_APP_KEY"
+  dropbox_app_secret_env_name="DROPBOX_APP_SECRET"
+  if [[ -f "$cfg" ]]; then
+    token_env_cfg="$(parse_toml_string "token_env" "$cfg" || true)"
+    [[ -n "${token_env_cfg:-}" ]] && dropbox_token_env_name="$token_env_cfg"
+    refresh_env_cfg="$(parse_toml_string "refresh_token_env" "$cfg" || true)"
+    [[ -n "${refresh_env_cfg:-}" ]] && dropbox_refresh_env_name="$refresh_env_cfg"
+    app_key_env_cfg="$(parse_toml_string "app_key_env" "$cfg" || true)"
+    [[ -n "${app_key_env_cfg:-}" ]] && dropbox_app_key_env_name="$app_key_env_cfg"
+    app_secret_env_cfg="$(parse_toml_string "app_secret_env" "$cfg" || true)"
+    [[ -n "${app_secret_env_cfg:-}" ]] && dropbox_app_secret_env_name="$app_secret_env_cfg"
+  fi
+}
+
+has_dropbox_auth() {
+  local token_val refresh_val app_key_val app_secret_val
+  token_val="${!dropbox_token_env_name:-}"
+  if [[ -n "$token_val" ]]; then
+    return 0
+  fi
+  refresh_val="${!dropbox_refresh_env_name:-}"
+  app_key_val="${!dropbox_app_key_env_name:-}"
+  app_secret_val="${!dropbox_app_secret_env_name:-}"
+  [[ -n "$refresh_val" && -n "$app_key_val" && -n "$app_secret_val" ]]
 }
 
 while [[ $# -gt 0 ]]; do
@@ -113,13 +149,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+load_project_dropbox_env
+
 if [[ "$run_dropbox" -eq 1 ]]; then
   cfg_path="$SCRIPT_DIR/dropbox.toml"
   [[ -n "$config_file" ]] && cfg_path="$config_file"
-  token_key="$(resolve_token_env_name "$cfg_path")"
-  token_val="${!token_key:-}"
-  if [[ -z "$token_val" ]]; then
-    echo "warning: Dropbox token is not configured (env var '$token_key' is empty)." >&2
+  resolve_dropbox_auth_envs "$cfg_path"
+  if ! has_dropbox_auth; then
+    echo "warning: Dropbox credentials are not configured." >&2
+    echo "warning: Expected $dropbox_token_env_name or ($dropbox_refresh_env_name + $dropbox_app_key_env_name + $dropbox_app_secret_env_name)." >&2
     echo "warning: Skipping Dropbox push step. See README section 'Dropbox API Setup' for instructions." >&2
     run_dropbox=0
   fi
