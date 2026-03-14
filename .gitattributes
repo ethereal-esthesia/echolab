@@ -1,0 +1,3 @@
+.github/** linguist-generated=true
+scripts/*.sh linguist-generated=true
+scripts/*.ps1 linguist-generated=true
