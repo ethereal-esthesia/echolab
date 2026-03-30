@@ -1,0 +1,9 @@
+# Build outputs
+bench_cpp
+bench_rust
+bench_window_cpp
+bench_window_rust
+*.class
+
+# OS files
+.DS_Store

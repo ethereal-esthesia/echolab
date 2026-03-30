@@ -20,9 +20,16 @@ out/
 !.secrets/dropbox.env.example
 
 # Legacy reference imports
-archive/
 screenshots/
 tools/__pycache__/
+
+# Archive: track sources, ignore generated artifacts.
+archive/**/target/
+archive/**/build/
+archive/**/dist/
+archive/**/out/
+archive/**/.venv/
+archive/**/env/
 
 # ROM folders (case-insensitive): ignore contents by default
 **/*[Rr][Oo][Mm]*/**
